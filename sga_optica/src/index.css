@@ -1,0 +1,39 @@
+/* Reset y estilos base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  padding-top: 140px; /* Para navbar fijo */
+  background-color: #f8f9fa;
+}
+
+/* Ajustes Bootstrap personalizados */
+:root {
+  --bs-primary: #1a5fb4;
+  --bs-primary-rgb: 26, 95, 180;
+}
+
+.btn-primary {
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
+}
+
+.btn-primary:hover {
+  background-color: #154c8c;
+  border-color: #154c8c;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  body {
+    padding-top: 180px;
+  }
+}
