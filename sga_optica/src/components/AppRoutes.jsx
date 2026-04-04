@@ -19,9 +19,15 @@ import Servicios from './Clinica/Servicios'
 import Login from './registro/Login'
 import Register from './registro/Register'
 import Profile from './registro/Profile'
+import ForgotPassword from './registro/ForgotPassword'
+import ResetPassword from './registro/ResetPassword'
+
 //Importar componente de carrito
 import CartPage from './carrito/CartPage'
 import Pedidos from './carrito/Pedidos'
+
+//Importar componente de notificación
+import MisNotificaciones from './campanita/MisNotificaciones';
 
 function AppRouter() {
   return (
@@ -41,13 +47,20 @@ function AppRouter() {
         <Route path="/clinica/consultas" element={<Consultas />} />
         <Route path="/clinica/examenes" element={<Examenes />} />
         <Route path="/clinica/servicios" element={<Servicios />} />
+
         {/* Rutas de registro */}
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register />} />
         <Route path='/profile' element={<Profile />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+
         {/* Ruta de carrito */}
         <Route path="/carrito" element={<CartPage />} />
         <Route path='/pedidos' element={<Pedidos />} />
+
+        {/* Ruta de notificaciones */}
+        <Route path="/mis-notificaciones" element={<MisNotificaciones />} />
       </Routes>
     </Router>
   )

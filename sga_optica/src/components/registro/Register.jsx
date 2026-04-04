@@ -1,15 +1,15 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { authService } from '../../services/auth.service'
 
 const Register = () => {
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
     nombre: '',
-    apellido: '',
-    email: '',
+    correo: '',
     telefono: '',
-    password: '',
-    confirmPassword: '',
+    contrasena: '',
+    confirmar_contrasena: '',
     aceptaTerminos: false,
     recibirOfertas: true
   })
@@ -23,7 +23,6 @@ const Register = () => {
       [name]: type === 'checkbox' ? checked : value
     }))
     
-    // Limpiar error del campo al escribir
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
@@ -33,12 +32,11 @@ const Register = () => {
     const newErrors = {}
 
     if (!formData.nombre.trim()) newErrors.nombre = 'El nombre es requerido'
-    if (!formData.apellido.trim()) newErrors.apellido = 'El apellido es requerido'
     
-    if (!formData.email.trim()) {
-      newErrors.email = 'El email es requerido'
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email inválido'
+    if (!formData.correo.trim()) {
+      newErrors.correo = 'El email es requerido'
+    } else if (!/\S+@\S+\.\S+/.test(formData.correo)) {
+      newErrors.correo = 'Email inválido'
     }
 
     if (!formData.telefono.trim()) {
@@ -47,14 +45,14 @@ const Register = () => {
       newErrors.telefono = 'Teléfono debe tener 10 dígitos'
     }
 
-    if (!formData.password) {
-      newErrors.password = 'La contraseña es requerida'
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Mínimo 6 caracteres'
+    if (!formData.contrasena) {
+      newErrors.contrasena = 'La contraseña es requerida'
+    } else if (formData.contrasena.length < 6) {
+      newErrors.contrasena = 'Mínimo 6 caracteres'
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Las contraseñas no coinciden'
+    if (formData.contrasena !== formData.confirmar_contrasena) {
+      newErrors.confirmar_contrasena = 'Las contraseñas no coinciden'
     }
 
     if (!formData.aceptaTerminos) {
@@ -77,31 +75,48 @@ const Register = () => {
     setErrors({})
 
     try {
-      // Simular registro
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      // Guardar usuario simulado
-      const userData = {
+      console.log('Enviando datos de registro:', {
         nombre: formData.nombre,
-        apellido: formData.apellido,
-        email: formData.email,
+        correo: formData.correo,
         telefono: formData.telefono,
-        role: 'user',
-        fechaRegistro: new Date().toISOString()
-      }
+        contrasena: formData.contrasena,
+        confirmar_contrasena: formData.confirmar_contrasena
+      })
 
-      localStorage.setItem('user', JSON.stringify(userData))
+      const response = await authService.register({
+        nombre: formData.nombre,
+        correo: formData.correo,
+        telefono: formData.telefono,
+        contrasena: formData.contrasena,
+        confirmar_contrasena: formData.confirmar_contrasena
+      })
+      
+      console.log('Respuesta del registro:', response.data)
       
       alert('¡Registro exitoso! Bienvenido a S.G.A Óptica')
-      navigate('/') // Redirigir al inicio
+      navigate('/login')
       
-  } catch (error) {  // <-- Aquí se usa la variable
-    console.error('Error en registro:', error);
-    setErrors({ general: 'Error en el registro. Intenta nuevamente.' });
-  } finally {
-    setLoading(false);
+    } catch (error) {
+      console.error('Error en registro:', error)
+      console.error('Respuesta del error:', error.response?.data)
+      
+      let mensajeError = 'Error en el registro. Intenta nuevamente.'
+      
+      if (error.response) {
+        mensajeError = error.response.data?.message || 
+                       error.response.data?.error || 
+                       `Error ${error.response.status}: ${error.response.statusText}`
+      } else if (error.request) {
+        mensajeError = 'No se pudo conectar con el servidor. Verifica tu conexión.'
+      } else {
+        mensajeError = error.message || 'Error desconocido'
+      }
+      
+      setErrors({ general: mensajeError })
+    } finally {
+      setLoading(false)
+    }
   }
-};
 
   return (
     <div className="container py-5" style={{ marginTop: '100px' }}>
@@ -115,35 +130,26 @@ const Register = () => {
             
             <div className="card-body p-4">
               {errors.general && (
-                <div className="alert alert-danger">{errors.general}</div>
+                <div className="alert alert-danger">
+                  <i className="fas fa-exclamation-triangle me-2"></i>
+                  {errors.general}
+                </div>
               )}
 
               <form onSubmit={handleSubmit}>
                 <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">Nombre *</label>
+                  <div className="col-md-12 mb-3">
+                    <label className="form-label">Nombre Completo *</label>
                     <input
                       type="text"
                       className={`form-control ${errors.nombre ? 'is-invalid' : ''}`}
                       name="nombre"
                       value={formData.nombre}
                       onChange={handleChange}
-                      placeholder="Tu nombre"
+                      placeholder="Tu nombre completo"
+                      disabled={loading}
                     />
                     {errors.nombre && <div className="invalid-feedback">{errors.nombre}</div>}
-                  </div>
-
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">Apellido *</label>
-                    <input
-                      type="text"
-                      className={`form-control ${errors.apellido ? 'is-invalid' : ''}`}
-                      name="apellido"
-                      value={formData.apellido}
-                      onChange={handleChange}
-                      placeholder="Tu apellido"
-                    />
-                    {errors.apellido && <div className="invalid-feedback">{errors.apellido}</div>}
                   </div>
                 </div>
 
@@ -152,13 +158,14 @@ const Register = () => {
                     <label className="form-label">Email *</label>
                     <input
                       type="email"
-                      className={`form-control ${errors.email ? 'is-invalid' : ''}`}
-                      name="email"
-                      value={formData.email}
+                      className={`form-control ${errors.correo ? 'is-invalid' : ''}`}
+                      name="correo"
+                      value={formData.correo}
                       onChange={handleChange}
                       placeholder="ejemplo@email.com"
+                      disabled={loading}
                     />
-                    {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+                    {errors.correo && <div className="invalid-feedback">{errors.correo}</div>}
                   </div>
 
                   <div className="col-md-6 mb-3">
@@ -170,6 +177,7 @@ const Register = () => {
                       value={formData.telefono}
                       onChange={handleChange}
                       placeholder="3001234567"
+                      disabled={loading}
                     />
                     {errors.telefono && <div className="invalid-feedback">{errors.telefono}</div>}
                   </div>
@@ -180,27 +188,29 @@ const Register = () => {
                     <label className="form-label">Contraseña *</label>
                     <input
                       type="password"
-                      className={`form-control ${errors.password ? 'is-invalid' : ''}`}
-                      name="password"
-                      value={formData.password}
+                      className={`form-control ${errors.contrasena ? 'is-invalid' : ''}`}
+                      name="contrasena"
+                      value={formData.contrasena}
                       onChange={handleChange}
                       placeholder="Mínimo 6 caracteres"
+                      disabled={loading}
                     />
-                    {errors.password && <div className="invalid-feedback">{errors.password}</div>}
+                    {errors.contrasena && <div className="invalid-feedback">{errors.contrasena}</div>}
                   </div>
 
                   <div className="col-md-6 mb-3">
                     <label className="form-label">Confirmar Contraseña *</label>
                     <input
                       type="password"
-                      className={`form-control ${errors.confirmPassword ? 'is-invalid' : ''}`}
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
+                      className={`form-control ${errors.confirmar_contrasena ? 'is-invalid' : ''}`}
+                      name="confirmar_contrasena"
+                      value={formData.confirmar_contrasena}
                       onChange={handleChange}
                       placeholder="Repite tu contraseña"
+                      disabled={loading}
                     />
-                    {errors.confirmPassword && (
-                      <div className="invalid-feedback">{errors.confirmPassword}</div>
+                    {errors.confirmar_contrasena && (
+                      <div className="invalid-feedback">{errors.confirmar_contrasena}</div>
                     )}
                   </div>
                 </div>
@@ -214,6 +224,7 @@ const Register = () => {
                       name="aceptaTerminos"
                       checked={formData.aceptaTerminos}
                       onChange={handleChange}
+                      disabled={loading}
                     />
                     <label className="form-check-label" htmlFor="aceptaTerminos">
                       Acepto los <Link to="/terminos" className="text-decoration-none">Términos y Condiciones</Link> 
@@ -234,6 +245,7 @@ const Register = () => {
                       name="recibirOfertas"
                       checked={formData.recibirOfertas}
                       onChange={handleChange}
+                      disabled={loading}
                     />
                     <label className="form-check-label" htmlFor="recibirOfertas">
                       Quiero recibir ofertas exclusivas y novedades por email

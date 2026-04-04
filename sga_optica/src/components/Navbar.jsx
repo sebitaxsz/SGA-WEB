@@ -1,33 +1,74 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from './carrito/CartContext'
+import NotificationBell from './campanita/NotificationBell'
 import './Navbar.css';
 
 const Navbar = () => {
   const navigate = useNavigate()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userName, setUserName] = useState('')
+  const [userRole, setUserRole] = useState('')
+  const [userEmail, setUserEmail] = useState('')
   const { cart } = useCart()
 
-useEffect(() => {
-    const user = localStorage.getItem('user')
-    if (user) {
-      try {
-        const userData = JSON.parse(user)
-        setTimeout(() => {
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('token')
+      const user = localStorage.getItem('user')
+      
+      if (token && user) {
+        try {
+          const userData = JSON.parse(user)
           setIsLoggedIn(true)
-          setUserName(userData.nombre || 'Usuario')
-        }, 0)
-      } catch (error) {
-        console.error('Error parsing user data:', error)
+          
+          // Obtener nombre y email
+          const nombre = userData.nombre || userData.firstName || userData.username || 'Usuario'
+          const email = userData.email || userData.user_user || userData.username || ''
+          setUserName(nombre)
+          setUserEmail(email)
+          
+          // FORZAR ROL ADMIN por email
+          let role = 'user'
+          // Lista de emails de admin
+          const adminEmails = ['marlonadmin@gmail.com', 'admin@sgaoptica.com', 'administrador@sgaoptica.com']
+          
+          if (adminEmails.includes(email) || 
+              userData.role === 'admin' || 
+              userData.role === 'administrador' || 
+              userData.role_id === 1) {
+            role = 'admin'
+          }
+          
+          setUserRole(role)
+          console.log('Email detectado:', email)
+          console.log('Rol asignado:', role)
+          
+        } catch (error) {
+          console.error('Error parsing user data:', error)
+        }
+      } else {
+        setIsLoggedIn(false)
+        setUserName('')
+        setUserRole('')
+        setUserEmail('')
       }
     }
+    
+    checkAuth()
+    
+    window.addEventListener('storage', checkAuth)
+    return () => window.removeEventListener('storage', checkAuth)
   }, [])
-  // Función para cerrar sesión
+
   const handleLogout = () => {
     localStorage.removeItem('user')
+    localStorage.removeItem('token')
+    localStorage.removeItem('rememberMe')
     setIsLoggedIn(false)
     setUserName('')
+    setUserRole('')
+    setUserEmail('')
     navigate('/')
   }
 
@@ -52,41 +93,26 @@ useEffect(() => {
 
   return (
     <header>
-      {/* Navbar principal */}
       <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm py-3 fixed-top">
         <div className="container">
-          {/* Logo */}
           <Link className="navbar-brand d-flex align-items-center" to="/">
             <i className="fas fa-glasses fs-3 text-primary me-2"></i>
             <span className="fs-4 fw-bold text-primary">S.G.A ÓPTICA</span>
           </Link>
           
-          {/* Botón hamburguesa */}
           <button 
             className="navbar-toggler" 
             type="button" 
             data-bs-toggle="collapse" 
             data-bs-target="#navbarContent"
-            aria-controls="navbarContent"
-            aria-expanded="false"
-            aria-label="Toggle navigation"
           >
             <span className="navbar-toggler-icon"></span>
           </button>
           
-          {/* Contenido del navbar */}
           <div className="collapse navbar-collapse" id="navbarContent">
             <ul className="navbar-nav mx-auto mb-2 mb-lg-0">
-              
-              {/* Productos Dropdown */}
               <li className="nav-item dropdown">
-                <Link 
-                  className="nav-link dropdown-toggle text-dark fs-5 fw-semibold px-3"
-                  to="#"
-                  role="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                >
+                <Link className="nav-link dropdown-toggle text-dark fs-5 fw-semibold px-3" to="#" role="button" data-bs-toggle="dropdown">
                   PRODUCTOS
                 </Link>
                 <ul className="dropdown-menu">
@@ -101,15 +127,8 @@ useEffect(() => {
                 </ul>
               </li>
               
-              {/* Agenda Dropdown */}
               <li className="nav-item dropdown">
-                <Link 
-                  className="nav-link dropdown-toggle text-dark fs-5 fw-semibold px-3"
-                  to="#"
-                  role="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                >
+                <Link className="nav-link dropdown-toggle text-dark fs-5 fw-semibold px-3" to="#" role="button" data-bs-toggle="dropdown">
                   AGENDA TU CITA
                 </Link>
                 <ul className="dropdown-menu">
@@ -124,15 +143,8 @@ useEffect(() => {
                 </ul>
               </li>
               
-              {/* Clínica Dropdown */}
               <li className="nav-item dropdown">
-                <Link 
-                  className="nav-link dropdown-toggle text-dark fs-5 fw-semibold px-3"
-                  to="#"
-                  role="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                >
+                <Link className="nav-link dropdown-toggle text-dark fs-5 fw-semibold px-3" to="#" role="button" data-bs-toggle="dropdown">
                   CLÍNICA
                 </Link>
                 <ul className="dropdown-menu">
@@ -148,49 +160,55 @@ useEffect(() => {
               </li>
             </ul>
             
-            {/* Acciones de usuario - ACTUALIZADO CON AUTENTICACIÓN */}
             <div className="d-flex align-items-center">
-              <Link to="/admin" className="btn btn-outline-primary me-2">
-                <i className="fas fa-cog me-1"></i> Panel Admin
-              </Link>
+              {/* Botón Panel Admin - Se muestra si es admin */}
+              {isLoggedIn && userRole === 'admin' && (
+                <Link to="/admin" className="btn btn-outline-danger me-2">
+                  <i className="fas fa-cog me-1"></i> Panel Admin
+                </Link>
+              )}
               
               {isLoggedIn ? (
-                <div className="dropdown me-2">
-                  <button 
-                    className="btn btn-outline-primary dropdown-toggle"
-                    type="button"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                  >
-                    <i className="fas fa-user me-1"></i> {userName}
-                  </button>
-                  <ul className="dropdown-menu dropdown-menu-end">
-                    <li>
-                      <Link className="dropdown-item" to="/profile">
-                        <i className="fas fa-id-card me-2"></i> Mi Perfil
-                      </Link>
-                    </li>
-                    <li>
-                      <Link className="dropdown-item" to="/citas/ver">
-                        <i className="fas fa-calendar me-2"></i> Mis Citas
-                      </Link>
-                    </li>
-                    <li>
-                      <Link className="dropdown-item" to="/pedidos">
-                        <i className="fas fa-shopping-bag me-2"></i> Mis Pedidos
-                      </Link>
-                    </li>
-                    <li><hr className="dropdown-divider" /></li>
-                    <li>
-                      <button 
-                        className="dropdown-item text-danger"
-                        onClick={handleLogout}
-                      >
-                        <i className="fas fa-sign-out-alt me-2"></i> Cerrar Sesión
-                      </button>
-                    </li>
-                  </ul>
-                </div>
+                <>
+                  <NotificationBell />
+                  
+                  <div className="dropdown me-2">
+                    <button 
+                      className="btn btn-outline-primary dropdown-toggle"
+                      type="button"
+                      data-bs-toggle="dropdown"
+                    >
+                      <i className="fas fa-user me-1"></i> {userName}
+                      {userRole === 'admin' && (
+                        <span className="badge bg-danger ms-2">Admin</span>
+                      )}
+                    </button>
+                    <ul className="dropdown-menu dropdown-menu-end">
+                      <li><Link className="dropdown-item" to="/profile">Mi Perfil</Link></li>
+                      <li><Link className="dropdown-item" to="/citas/ver">Mis Citas</Link></li>
+                      <li><Link className="dropdown-item" to="/mis-notificaciones">Notificaciones</Link></li>
+                      <li><Link className="dropdown-item" to="/pedidos">Mis Pedidos</Link></li>
+                      
+                      {userRole === 'admin' && (
+                        <>
+                          <li><hr className="dropdown-divider" /></li>
+                          <li>
+                            <Link className="dropdown-item text-danger" to="/admin">
+                              <i className="fas fa-cog me-2"></i> Panel Administrativo
+                            </Link>
+                          </li>
+                        </>
+                      )}
+                      
+                      <li><hr className="dropdown-divider" /></li>
+                      <li>
+                        <button className="dropdown-item text-danger" onClick={handleLogout}>
+                          <i className="fas fa-sign-out-alt me-2"></i> Cerrar Sesión
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                </>
               ) : (
                 <Link to="/login" className="btn btn-outline-primary me-2">
                   <i className="fas fa-user me-1"></i> Ingresa
