@@ -1,319 +1,367 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Users,
-  Package,
-  Calendar,
-  DollarSign,
-  Eye,
-  Settings,
-  LogOut,
-  Bell,
-  Search,
-  FileText,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  XCircle,
-  ShoppingCart
-} from "lucide-react"
-import Reportes from './reportes/Reportes'
-import "./Admin.css"
+  Users, Package, Calendar, DollarSign, Settings,
+  LogOut, Bell, FileText, LayoutDashboard, Stethoscope,
+  Tag, X, Check, Clock, CheckCircle, XCircle, ChevronRight,
+  ShoppingCart, FileSearch, Menu
+} from 'lucide-react'
 
+import Reportes from './reportes/Reportes'
+import AdminUsuarios from './admin/AdminUsuarios'
+import AdminProductos from './admin/AdminProductos'
+import AdminClientes from './admin/AdminClientes'
+import AdminOptometras from './admin/AdminOptometras'
+import AdminCitas from './admin/AdminCitas'
+import AdminCatalogos from './admin/AdminCatalogos'
+import AdminVentas from './admin/AdminVentas'
+import AdminNotificaciones from './admin/AdminNotificaciones'
+import AdminFormulas from './admin/AdminFormulas'
+
+import { getNotifications, markNotifRead, getSales, getCustomers, getProducts, getAppointments } from '../services/admin.service'
+import './Admin.css'
+import './admin/AdminPanel.css'
+
+const NAV = [
+  {
+    section: 'Principal',
+    items: [
+      { id: 'dashboard',       label: 'Dashboard',       icon: LayoutDashboard },
+      { id: 'reportes',        label: 'Reportes',         icon: FileText },
+    ]
+  },
+  {
+    section: 'Gestión',
+    items: [
+      { id: 'usuarios',        label: 'Usuarios',         icon: Users },
+      { id: 'clientes',        label: 'Clientes',         icon: Users },
+      { id: 'optometras',      label: 'Optómetras',       icon: Stethoscope },
+      { id: 'productos',       label: 'Productos',        icon: Package },
+      { id: 'ventas',          label: 'Ventas',           icon: DollarSign },
+      { id: 'citas',           label: 'Citas',            icon: Calendar },
+    ]
+  },
+  {
+    section: 'Sistema',
+    items: [
+      { id: 'notificaciones',  label: 'Notificaciones',   icon: Bell },
+      { id: 'formulas',        label: 'Fórmulas',         icon: FileSearch },
+      { id: 'catalogos',       label: 'Catálogos',        icon: Tag },
+    ]
+  }
+]
+
+const SECTION_TITLES = {
+  dashboard:'Dashboard', reportes:'Reportes', usuarios:'Usuarios',
+  clientes:'Clientes', optometras:'Optómetras', productos:'Productos',
+  ventas:'Ventas', citas:'Citas', notificaciones:'Notificaciones',
+  formulas:'Fórmulas Ópticas', catalogos:'Catálogos',
+}
+
+/* Dashboard con datos reales */
+function Dashboard() {
+  const [stats, setStats] = useState({ sales:0, customers:0, products:0, appointments:0, salesAmount:0 })
+  const [loading, setLoading] = useState(true)
+  const [recentSales, setRecentSales] = useState([])
+  const [upcomingAppts, setUpcomingAppts] = useState([])
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [sRes, cRes, pRes, aRes] = await Promise.all([
+          getSales(), getCustomers(), getProducts({ limit: 1 }), getAppointments()
+        ])
+        const sales = sRes.data?.data || sRes.data || []
+        const customers = cRes.data || []
+        const products = pRes.data?.totalItems || 0
+        const appts = aRes.data?.data || aRes.data || []
+        const totalAmount = sales.reduce((acc, s) => acc + (Number(s.totalAmount) || 0), 0)
+        setStats({ sales: sales.length, customers: customers.length, products, appointments: appts.length, salesAmount: totalAmount })
+        setRecentSales(sales.slice(0, 5))
+        setUpcomingAppts(appts.filter(a => a.status === 'PENDING' || a.status === 'CONFIRMED').slice(0, 5))
+      } catch (e) { console.error(e) }
+      finally { setLoading(false) }
+    }
+    load()
+  }, [])
+
+  const fmt = (n) => `$${Number(n).toLocaleString('es-CO')}`
+  const STATUS_COLORS = { PENDING:'warning', CONFIRMED:'success', COMPLETED:'info', CANCELLED:'danger' }
+  const STATUS_LABELS = { PENDING:'Pendiente', CONFIRMED:'Confirmada', COMPLETED:'Completada', CANCELLED:'Cancelada' }
+
+  if (loading) return <div className="loading-spinner"><div className="spinner" /></div>
+
+  return (
+    <div>
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-icon sales"><DollarSign size={24} /></div>
+          <div className="stat-info"><h3>{fmt(stats.salesAmount)}</h3><p>Total en Ventas</p><span className="stat-sub">{stats.sales} transacciones</span></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon appointments"><Calendar size={24} /></div>
+          <div className="stat-info"><h3>{stats.appointments}</h3><p>Citas Totales</p><span className="stat-sub">{upcomingAppts.length} activas</span></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon inventory"><Package size={24} /></div>
+          <div className="stat-info"><h3>{stats.products}</h3><p>Productos</p></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon clients"><Users size={24} /></div>
+          <div className="stat-info"><h3>{stats.customers}</h3><p>Clientes</p></div>
+        </div>
+      </div>
+
+      <div className="content-grid">
+        <div className="content-card">
+          <div className="card-header"><h2>Ventas Recientes</h2></div>
+          <div className="table-container">
+            {recentSales.length === 0 ? <p className="empty-msg">Sin ventas registradas aún</p> : (
+              <table className="data-table">
+                <thead><tr><th>N°</th><th>Total</th><th>Fecha</th></tr></thead>
+                <tbody>
+                  {recentSales.map(s => (
+                    <tr key={s.sale_id}>
+                      <td>#{s.sale_id}</td>
+                      <td className="money">{fmt(s.totalAmount)}</td>
+                      <td>{s.saleDate ? new Date(s.saleDate).toLocaleDateString('es-CO') : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
+        <div className="content-card">
+          <div className="card-header"><h2>Citas Activas</h2></div>
+          <div className="appointments-list">
+            {upcomingAppts.length === 0 ? <p className="empty-msg">No hay citas activas</p>
+              : upcomingAppts.map(a => (
+                <div key={a.appointment_id} className="appointment-item">
+                  <div className="appointment-header">
+                    <div className="appointment-client">
+                      <h4>Cita #{a.appointment_id}</h4>
+                      <span className="appointment-time">{a.startTime || '—'}</span>
+                    </div>
+                    <span className={`appointment-status status-${STATUS_COLORS[a.status] || 'secondary'}`}>
+                      {STATUS_LABELS[a.status] || a.status}
+                    </span>
+                  </div>
+                  <p className="appointment-service">{a.appointmentDate ? new Date(a.appointmentDate).toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'}) : '—'}</p>
+                </div>
+              ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* Panel principal */
 const PanelAdmin = () => {
   const navigate = useNavigate()
-  const [activeSection, setActiveSection] = useState('inventario')
+  const [activeSection, setActiveSection] = useState('dashboard')
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
   const [userName, setUserName] = useState('')
   const [notifications, setNotifications] = useState([])
   const [showNotifications, setShowNotifications] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
-  // Datos de ejemplo
-  const [salesData] = useState([
-    { cliente: "María González", producto: "Ray-Ban Aviator", monto: "$150.00", estado: "Completada" },
-    { cliente: "Carlos Rodríguez", producto: "Montura Titanio", monto: "$159.990", estado: "Pendiente" },
-    { cliente: "Ana López", producto: "Lentes Progressivos", monto: "$220.00", estado: "En Proceso" },
-  ])
-
-  const [appointmentsData] = useState([
-    { cliente: "María González", hora: "09:00", servicio: "Examen de vista completo", estado: "Confirmada", telefono: "(+57) 123-4567" },
-    { cliente: "Carlos Rodríguez", hora: "11:30", servicio: "Entrega de lentes", estado: "Pendiente", telefono: "(+57) 987-6543" },
-    { cliente: "Ana López", hora: "14:00", servicio: "Ajuste de monturas", estado: "Reagendada", telefono: "(+57) 456-7890" },
-  ])
-
-  // Verificar autenticación y rol
   useEffect(() => {
     const token = localStorage.getItem('token')
     const user = localStorage.getItem('user')
-    
-    console.log('Verificando acceso a PanelAdmin...')
-    
-    if (!token || !user) {
-      console.log('No hay token o usuario, redirigiendo a login')
-      navigate('/login')
-      return
-    }
-    
+    if (!token || !user) { navigate('/login'); return }
     try {
       const userData = JSON.parse(user)
-      console.log('Datos del usuario:', userData)
-      
-      // Verificar si es admin (role = 'admin' o role_id = 1)
-      const isUserAdmin = userData.role === 'admin' || 
-                          userData.role === 'administrador' || 
-                          userData.role_id === 1
-      
-      if (!isUserAdmin) {
-        console.log('Acceso denegado: No es administrador')
-        navigate('/')
-        return
-      }
-      
+      const isUserAdmin = userData.role === 'admin' || userData.role === 'administrador' || userData.role_id === 1
+      if (!isUserAdmin) { navigate('/'); return }
       setIsAdmin(true)
       setUserName(userData.nombre || userData.firstName || 'Administrador')
-      
-    } catch (error) {
-      console.error('Error verificando admin:', error)
-      navigate('/')
-    } finally {
-      setLoading(false)
-    }
+    } catch { navigate('/') }
+    finally { setLoading(false) }
   }, [navigate])
 
   const fetchNotifications = async () => {
-    const token = localStorage.getItem('token')
-    if (!token) return
-
     try {
-      const response = await fetch('https://7l77sjp2-3002.use2.devtunnels.ms/api/v1/notification?limit=10', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setNotifications(data.data || [])
-        const unread = data.data?.filter(n => n.status === 'PENDING' || n.status === 'SENT').length || 0
-        setUnreadCount(unread)
-      }
-    } catch (error) {
-      console.error('Error fetching notifications:', error)
-    }
+      const res = await getNotifications()
+      const data = res.data?.data || res.data || []
+      setNotifications(data)
+      setUnreadCount(data.filter(n => n.status === 'PENDING' || n.status === 'SENT').length)
+    } catch (e) { console.error(e) }
   }
 
-  useEffect(() => {
-    if (isAdmin) {
-      fetchNotifications()
-    }
-  }, [isAdmin])
+  useEffect(() => { if (isAdmin) fetchNotifications() }, [isAdmin])
 
-  const markAsRead = async (notificationId) => {
-    const token = localStorage.getItem('token')
-    if (!token) return
-
+  const handleMarkRead = async (id) => {
     try {
-      await fetch(`https://7l77sjp2-3002.use2.devtunnels.ms/api/v1/notification/${notificationId}/read`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      setNotifications(prev => prev.map(n => n.notification_id === notificationId ? { ...n, status: 'READ' } : n))
+      await markNotifRead(id)
+      setNotifications(prev => prev.map(n => n.notification_id === id ? {...n, status:'READ'} : n))
       setUnreadCount(prev => Math.max(0, prev - 1))
-    } catch (error) {
-      console.error('Error:', error)
-    }
-  }
-
-  const markAllAsRead = async () => {
-    const unreadNotifications = notifications.filter(n => n.status !== 'READ')
-    for (const notification of unreadNotifications) {
-      await markAsRead(notification.notification_id)
-    }
+    } catch(e) { console.error(e) }
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    localStorage.removeItem('rememberMe')
+    localStorage.removeItem('token'); localStorage.removeItem('user'); localStorage.removeItem('rememberMe')
     navigate('/login')
   }
 
-  const formatDate = (dateString) => {
-    if (!dateString) return ''
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffMins = Math.floor((now - date) / 60000)
-    if (diffMins < 1) return 'Ahora mismo'
-    if (diffMins < 60) return `Hace ${diffMins} min`
-    if (diffMins < 1440) return `Hace ${Math.floor(diffMins / 60)} h`
-    return date.toLocaleDateString('es-ES')
+  const formatDate = (d) => {
+    if (!d) return ''
+    const diff = Math.floor((Date.now() - new Date(d)) / 60000)
+    if (diff < 1) return 'Ahora'
+    if (diff < 60) return `Hace ${diff} min`
+    if (diff < 1440) return `Hace ${Math.floor(diff/60)} h`
+    return new Date(d).toLocaleDateString('es-ES')
   }
 
-  const getNotificationIcon = (type) => {
-    switch(type) {
-      case 'APPOINTMENT_REMINDER': return <Clock size={16} className="text-info" />
-      case 'APPOINTMENT_CONFIRMED': return <CheckCircle size={16} className="text-success" />
-      case 'APPOINTMENT_CANCELLED': return <XCircle size={16} className="text-danger" />
-      default: return <Bell size={16} className="text-secondary" />
-    }
+  const getNotifIcon = (type) => {
+    if (type === 'APPOINTMENT_CONFIRMED') return <CheckCircle size={15} style={{color:'#22c55e'}} />
+    if (type === 'APPOINTMENT_CANCELLED') return <XCircle size={15} style={{color:'#ef4444'}} />
+    return <Clock size={15} style={{color:'#60a5fa'}} />
   }
 
-  const renderContent = () => {
+  const navigate_section = (id) => { setActiveSection(id); setShowNotifications(false) }
+
+  const renderSection = () => {
     switch(activeSection) {
-      case 'reportes':
-        return <Reportes />
-      case 'inventario':
-        return (
-          <div className="content-grid">
-            <div className="content-card">
-              <div className="card-header">
-                <h2>Ventas Recientes</h2>
-                <button className="view-all-btn">Ver Todas</button>
-              </div>
-              <div className="table-container">
-                <table className="data-table">
-                  <thead><tr><th>Cliente</th><th>Producto</th><th>Monto</th><th>Estado</th></tr></thead>
-                  <tbody>
-                    {salesData.map((sale, index) => (
-                      <tr key={index}>
-                        <td>{sale.cliente}</td><td>{sale.producto}</td><td>{sale.monto}</td>
-                        <td><span className={`status-badge status-${sale.estado.toLowerCase().replace(/\s+/g, "-")}`}>{sale.estado}</span></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div className="content-card">
-              <div className="card-header">
-                <h2>Citas de Hoy</h2>
-                <button className="new-appointment-btn">Nueva Cita</button>
-              </div>
-              <div className="appointments-list">
-                {appointmentsData.map((appointment, index) => (
-                  <div key={index} className="appointment-item">
-                    <div className="appointment-header">
-                      <div className="appointment-client"><h4>{appointment.cliente}</h4><span className="appointment-time">{appointment.hora}</span></div>
-                      <span className={`appointment-status status-${appointment.estado.toLowerCase().replace(/\s+/g, "-")}`}>{appointment.estado}</span>
-                    </div>
-                    <p className="appointment-service">{appointment.servicio}</p>
-                    <p className="appointment-phone">Tel: {appointment.telefono}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )
-      default:
-        return <div className="content-card"><div className="card-header"><h2>Sección en construcción</h2></div><div className="p-4 text-center"><p>Próximamente disponible.</p></div></div>
+      case 'dashboard':      return <Dashboard />
+      case 'reportes':       return <Reportes />
+      case 'usuarios':       return <AdminUsuarios />
+      case 'clientes':       return <AdminClientes />
+      case 'optometras':     return <AdminOptometras />
+      case 'productos':      return <AdminProductos />
+      case 'ventas':         return <AdminVentas />
+      case 'citas':          return <AdminCitas />
+      case 'notificaciones': return <AdminNotificaciones />
+      case 'formulas':       return <AdminFormulas />
+      case 'catalogos':      return <AdminCatalogos />
+      default:               return <Dashboard />
     }
   }
 
-  if (loading) {
-    return (
-      <div className="admin-panel">
-        <div className="loading-container d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
-          <div className="spinner-border text-primary" role="status"><span className="visually-hidden">Cargando...</span></div>
-        </div>
-      </div>
-    )
-  }
-
-  if (!isAdmin) {
-    return null
-  }
+  if (loading) return (
+    <div className="admin-panel" style={{display:'flex',justifyContent:'center',alignItems:'center',minHeight:'100vh'}}>
+      <div className="spinner" />
+    </div>
+  )
+  if (!isAdmin) return null
 
   return (
-    <div className="admin-panel">
-      {/* Sidebar */}
-      <div className="admin-sidebar">
-        <div className="sidebar-header">
-          <h2>S.G.A Óptica</h2>
-          <p>Sistema Administrativo</p>
-        </div>
-        <nav className="sidebar-nav">
-          <div className="nav-section">
-            <h3>Dashboard</h3>
-            <ul>
-              <li className={`nav-item ${activeSection === 'inventario' ? 'active' : ''}`} onClick={() => setActiveSection('inventario')}>
-                <Eye size={18} /><span>Inventario</span>
-              </li>
-              <li className={`nav-item ${activeSection === 'ventas' ? 'active' : ''}`} onClick={() => setActiveSection('ventas')}>
-                <DollarSign size={18} /><span>Ventas</span>
-              </li>
-              <li className={`nav-item ${activeSection === 'citas' ? 'active' : ''}`} onClick={() => setActiveSection('citas')}>
-                <Calendar size={18} /><span>Citas</span>
-              </li>
-            </ul>
-          </div>
-          <div className="nav-section">
-            <h3>Gestión</h3>
-            <ul>
-              <li className={`nav-item ${activeSection === 'clientes' ? 'active' : ''}`} onClick={() => setActiveSection('clientes')}>
-                <Users size={18} /><span>Clientes</span>
-              </li>
-              <li className={`nav-item ${activeSection === 'productos' ? 'active' : ''}`} onClick={() => setActiveSection('productos')}>
-                <Package size={18} /><span>Productos</span>
-              </li>
-              <li className={`nav-item ${activeSection === 'reportes' ? 'active' : ''}`} onClick={() => setActiveSection('reportes')}>
-                <FileText size={18} /><span>Reportes</span>
-              </li>
-              <li className={`nav-item ${activeSection === 'configuracion' ? 'active' : ''}`} onClick={() => setActiveSection('configuracion')}>
-                <Settings size={18} /><span>Configuración</span>
-              </li>
-            </ul>
-          </div>
-        </nav>
-        <div className="sidebar-footer">
-          <button className="logout-btn" onClick={handleLogout}><LogOut size={18} /><span>Cerrar Sesión</span></button>
-        </div>
-      </div>
+    <div className={`admin-panel new-panel ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
 
-      {/* Main Content */}
-      <div className="admin-main">
-        <div className="admin-topbar">
+      {/* Sidebar */}
+      <aside className="admin-sidebar new-sidebar">
+        <div className="sidebar-header">
+          <div className="sidebar-logo">
+            <span className="logo-emoji">👁</span>
+            <div className={`logo-text ${sidebarOpen ? '' : 'hidden'}`}>
+              <span className="logo-title">SGA Óptica</span>
+              <span className="logo-sub">Admin Panel</span>
+            </div>
+          </div>
+        </div>
+
+        <nav className="sidebar-nav">
+          {NAV.map(group => (
+            <div className="nav-section" key={group.section}>
+              {sidebarOpen && <h3 className="nav-section-title">{group.section}</h3>}
+              <ul>
+                {group.items.map(item => {
+                  const Icon = item.icon
+                  return (
+                    <li
+                      key={item.id}
+                      className={`nav-item ${activeSection === item.id ? 'active' : ''}`}
+                      onClick={() => navigate_section(item.id)}
+                      title={!sidebarOpen ? item.label : ''}
+                    >
+                      <Icon size={18} className="nav-icon" />
+                      {sidebarOpen && <span className="nav-label">{item.label}</span>}
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          ))}
+        </nav>
+
+        <div className="sidebar-footer">
+          {sidebarOpen && (
+            <div className="sidebar-user">
+              <div className="avatar sm">{userName.charAt(0).toUpperCase()}</div>
+              <div className="sidebar-user-info">
+                <span className="sidebar-user-name">{userName}</span>
+                <span className="role-badge admin">Admin</span>
+              </div>
+            </div>
+          )}
+          <button className="logout-btn" onClick={handleLogout} title="Cerrar sesión">
+            <LogOut size={18} />
+            {sidebarOpen && <span>Salir</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <div className="admin-main new-main">
+        {/* Topbar */}
+        <header className="admin-topbar new-topbar">
           <div className="topbar-left">
-            <h1>{activeSection === 'reportes' ? 'Reportes' : activeSection === 'inventario' ? 'Inventario' : 'Dashboard'}</h1>
-            <p>Bienvenido, {userName}</p>
+            <button className="topbar-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
+              <Menu size={20} />
+            </button>
+            <div>
+              <h1 className="topbar-title">{SECTION_TITLES[activeSection]}</h1>
+              <p className="topbar-sub">Bienvenido, {userName}</p>
+            </div>
           </div>
           <div className="topbar-right">
-            <div className="search-bar"><Search size={18} /><input type="text" placeholder="Buscar..." /></div>
             <div className="notifications-dropdown-container">
               <button className="notification-btn" onClick={() => setShowNotifications(!showNotifications)}>
-                <Bell size={18} />
+                <Bell size={20} />
                 {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
               </button>
               {showNotifications && (
                 <div className="notifications-dropdown">
-                  <div className="notifications-header"><h6>Notificaciones</h6>{unreadCount > 0 && <button onClick={markAllAsRead} className="mark-all-btn">Marcar todas</button>}</div>
+                  <div className="notifications-header">
+                    <h6>Notificaciones</h6>
+                    <button onClick={fetchNotifications} className="mark-all-btn">↺</button>
+                  </div>
                   <div className="notifications-list">
-                    {notifications.length === 0 ? <div className="no-notifications"><Bell size={24} /><p>No hay notificaciones</p></div> :
-                      notifications.slice(0, 5).map(notification => (
-                        <div key={notification.notification_id} className={`notification-item ${notification.status !== 'READ' ? 'unread' : ''}`} onClick={() => markAsRead(notification.notification_id)}>
-                          <div className="notification-icon">{getNotificationIcon(notification.type)}</div>
+                    {notifications.length === 0
+                      ? <div className="no-notifications"><Bell size={24} /><p>Sin notificaciones</p></div>
+                      : notifications.slice(0, 8).map(n => (
+                        <div key={n.notification_id} className={`notification-item ${n.status !== 'READ' ? 'unread' : ''}`} onClick={() => handleMarkRead(n.notification_id)}>
+                          <div className="notification-icon">{getNotifIcon(n.type)}</div>
                           <div className="notification-content">
-                            <div className="notification-title">{notification.subject}</div>
-                            <div className="notification-message">{notification.message}</div>
-                            <div className="notification-time">{formatDate(notification.sent_at || notification.createdAt)}</div>
+                            <div className="notification-title">{n.subject}</div>
+                            <div className="notification-message">{(n.message || '').slice(0, 55)}{(n.message || '').length > 55 ? '…' : ''}</div>
+                            <div className="notification-time">{formatDate(n.sent_at || n.createdAt)}</div>
                           </div>
                         </div>
-                      ))}
+                      ))
+                    }
+                  </div>
+                  <div className="notifications-footer">
+                    <button onClick={() => navigate_section('notificaciones')}>Ver todas →</button>
                   </div>
                 </div>
               )}
             </div>
-            <div className="user-profile"><div className="avatar">{userName.charAt(0).toUpperCase()}</div><span>{userName}</span><span className="role-badge admin">Admin</span></div>
+            <div className="topbar-user">
+              <div className="avatar sm">{userName.charAt(0).toUpperCase()}</div>
+              <span className="topbar-user-name">{userName}</span>
+            </div>
           </div>
-        </div>
+        </header>
 
-        {/* Stats Cards */}
-        <div className="stats-grid">
-          <div className="stat-card"><div className="stat-icon sales"><DollarSign size={24} /></div><div className="stat-info"><h3>$12,450</h3><p>Ventas del Mes</p><span className="stat-trend positive">+15.3%</span></div></div>
-          <div className="stat-card"><div className="stat-icon appointments"><Calendar size={24} /></div><div className="stat-info"><h3>28</h3><p>Citas Esta Semana</p><span className="stat-trend positive">+8</span></div></div>
-          <div className="stat-card"><div className="stat-icon inventory"><Package size={24} /></div><div className="stat-info"><h3>156</h3><p>Productos en Stock</p><span className="stat-trend negative">12 bajo mínimo</span></div></div>
-          <div className="stat-card"><div className="stat-icon clients"><Users size={24} /></div><div className="stat-info"><h3>342</h3><p>Clientes Registrados</p><span className="stat-trend positive">+23</span></div></div>
-        </div>
-
-        {renderContent()}
+        {/* Content */}
+        <main className="admin-content">
+          {renderSection()}
+        </main>
       </div>
     </div>
   )
