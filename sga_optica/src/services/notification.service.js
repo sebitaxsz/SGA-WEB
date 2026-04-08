@@ -8,4 +8,16 @@ export const notificationService = {
   markAsSent: (notificationId) => axiosInstance.put(`/notification/${notificationId}/sent`),
   createReminder: (data) => axiosInstance.post('/notification/reminder', data),
   sendDailyReminders: () => axiosInstance.post('/notification/send-daily-reminders'),
+  
+  // Nuevo: Enviar recordatorio de cita
+  sendAppointmentReminder: (appointmentData) => 
+    axiosInstance.post('/notifications/appointment-reminder', appointmentData),
+  
+  // Nuevo: Enviar recordatorio de cita creada
+  sendAppointmentCreated: (appointmentData) => 
+    axiosInstance.post('/notifications/appointment-created', appointmentData),
+  
+  // Nuevo: Enviar recordatorio de cancelación
+  sendAppointmentCancelled: (appointmentData) => 
+    axiosInstance.post('/notifications/appointment-cancelled', appointmentData)
 };
