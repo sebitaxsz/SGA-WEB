@@ -176,7 +176,7 @@ const PanelAdmin = () => {
     if (!token || !user) { navigate('/login'); return }
     try {
       const userData = JSON.parse(user)
-      const isUserAdmin = userData.role === 'admin' || userData.role === 'administrador' || userData.role_id === 1
+      const roleVal = (userData.role || userData.role_name || '').toLowerCase(); const isUserAdmin = roleVal === 'admin' || roleVal === 'administrador' || userData.role_id === 1
       if (!isUserAdmin) { navigate('/'); return }
       setIsAdmin(true)
       setUserName(userData.nombre || userData.firstName || 'Administrador')

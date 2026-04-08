@@ -777,6 +777,52 @@
 /* ── Empty msg ──────────────────────────────────────────────── */
 .empty-msg { text-align: center; color: var(--text-muted); padding: 24px; font-size: 13.5px; }
 
+/* ── Image upload ───────────────────────────────────────────── */
+.image-upload-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.image-preview-thumb {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.image-upload-input {
+  flex: 1;
+}
+
+.image-upload-input input[type="file"] {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  background: var(--bg);
+  width: 100%;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+/* ── Empty state ─────────────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 32px;
+  color: var(--text-muted);
+  gap: 12px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.empty-state p { font-size: 14px; margin: 0; }
+
 /* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .new-sidebar { display: none; }
