@@ -22,15 +22,12 @@ const Navbar = () => {
           const userData = JSON.parse(user)
           setIsLoggedIn(true)
           
-          // Obtener nombre y email
           const nombre = userData.nombre || userData.firstName || userData.username || 'Usuario'
           const email = userData.email || userData.user_user || userData.username || ''
           setUserName(nombre)
           setUserEmail(email)
           
-          // FORZAR ROL ADMIN por email
           let role = 'user'
-          // Lista de emails de admin
           const adminEmails = ['marlonadmin@gmail.com', 'admin@sgaoptica.com', 'administrador@sgaoptica.com']
           
           if (adminEmails.includes(email) || 
@@ -41,8 +38,6 @@ const Navbar = () => {
           }
           
           setUserRole(role)
-          console.log('Email detectado:', email)
-          console.log('Rol asignado:', role)
           
         } catch (error) {
           console.error('Error parsing user data:', error)
@@ -73,12 +68,6 @@ const Navbar = () => {
   }
 
   const menuItems = {
-    productos: [
-      { id: 'gafas-sol', name: 'Gafas de Sol', icon: 'fa-sun', path: '/productos/gafas-sol' },
-      { id: 'gafas-formuladas', name: 'Gafas Formuladas', icon: 'fa-glasses', path: '/productos/gafas-formuladas' },
-      { id: 'lentes-contacto', name: 'Lentes de Contacto', icon: 'fa-eye', path: '/productos/lentes-contacto' },
-      { id: 'gafas-deportivas', name: 'Gafas Deportivas', icon: 'fa-running', path: '/productos/gafas-deportivas' }
-    ],
     agenda: [
       { id: 'nueva-cita', name: 'Nueva Cita', icon: 'fa-calendar-plus', path: '/citas/nueva' },
       { id: 'ver-citas', name: 'Ver Citas', icon: 'fa-calendar-alt', path: '/citas/ver' },
@@ -111,20 +100,11 @@ const Navbar = () => {
           
           <div className="collapse navbar-collapse" id="navbarContent">
             <ul className="navbar-nav mx-auto mb-2 mb-lg-0">
-              <li className="nav-item dropdown">
-                <Link className="nav-link dropdown-toggle text-dark fs-5 fw-semibold px-3" to="#" role="button" data-bs-toggle="dropdown">
+              {/* PRODUCTOS - Ahora es un enlace directo */}
+              <li className="nav-item">
+                <Link className="nav-link text-dark fs-5 fw-semibold px-3" to="/productos">
                   PRODUCTOS
                 </Link>
-                <ul className="dropdown-menu">
-                  {menuItems.productos.map(item => (
-                    <li key={item.id}>
-                      <Link className="dropdown-item" to={item.path}>
-                        <i className={`fas ${item.icon} me-2 text-primary`}></i>
-                        {item.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
               </li>
               
               <li className="nav-item dropdown">
@@ -161,7 +141,6 @@ const Navbar = () => {
             </ul>
             
             <div className="d-flex align-items-center">
-              {/* Botón Panel Admin - Se muestra si es admin */}
               {isLoggedIn && userRole === 'admin' && (
                 <Link to="/admin" className="btn btn-outline-danger me-2">
                   <i className="fas fa-cog me-1"></i> Panel Admin

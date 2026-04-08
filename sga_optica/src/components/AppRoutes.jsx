@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import App from '../App'
 import PanelAdmin from './PanelAdmin'
 import ProductosPage from './ProductosPage'
+import AllProductsPage from './AllProductsPage'  // ← NUEVA IMPORTACIÓN
 import Navbar from './Navbar'
 
 // Importar componentes de citas
@@ -36,6 +37,7 @@ function AppRouter() {
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/admin" element={<PanelAdmin />} />
+        <Route path="/productos" element={<AllProductsPage />} />  {/* ← NUEVA RUTA */}
         <Route path="/productos/:category" element={<ProductosPage />} />
         
         {/* Rutas de citas */}
