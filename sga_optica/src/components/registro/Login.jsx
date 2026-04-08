@@ -145,17 +145,31 @@ const Login = () => {
       // Disparar evento storage para que otros componentes se actualicen
       window.dispatchEvent(new Event('storage'))
       
-      // Redirigir según el rol
+      // ============================================
+      // 🔄 REDIRECCIÓN POST-LOGIN (con soporte para carrito)
+      // ============================================
+      const redirectAfterLogin = localStorage.getItem("redirectAfterLogin");
+      
       console.log('=== REDIRIGIENDO ===')
-      if (userRole === 'admin') {
-        console.log('Redirigiendo a /admin')
-        navigate('/admin')
-      } else if (userRole === 'optometrist') {
-        console.log('Redirigiendo a /optometrist/perfil')
-        navigate('/optometrist/perfil')
+      console.log('redirectAfterLogin guardado:', redirectAfterLogin)
+      
+      if (redirectAfterLogin) {
+        // Limpiar el redirect después de usarlo
+        localStorage.removeItem("redirectAfterLogin");
+        console.log(`Redirigiendo a: ${redirectAfterLogin}`);
+        navigate(redirectAfterLogin);
       } else {
-        console.log('Redirigiendo a /')
-        navigate('/')
+        // Redirigir según el rol
+        if (userRole === 'admin') {
+          console.log('Redirigiendo a /admin')
+          navigate('/admin')
+        } else if (userRole === 'optometrist') {
+          console.log('Redirigiendo a /optometrist/perfil')
+          navigate('/optometrist/perfil')
+        } else {
+          console.log('Redirigiendo a /')
+          navigate('/')
+        }
       }
       
     } catch (err) {

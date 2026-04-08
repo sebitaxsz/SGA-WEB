@@ -36,7 +36,6 @@ export default function CartPage() {
         }
       } catch (error) {
         console.error('Error loading payment methods:', error);
-        // Datos de respaldo en caso de error
         setPaymentMethods([
           { id: 1, name: "Nequi" },
           { id: 3, name: "PSE" }
@@ -57,27 +56,35 @@ export default function CartPage() {
     setCustomerData(prev => ({ ...prev, [name]: value }));
   };
 
-  // === FUNCIÓN PARA GUARDAR PEDIDO EN LOCALSTORAGE ===
+  // === FUNCIÓN PARA VERIFICAR LOGIN ANTES DE CONTINUAR ===
+  const verificarLoginYContinuar = () => {
+    const usuario = localStorage.getItem("usuario");
+    
+    if (!usuario) {
+      localStorage.setItem("redirectAfterLogin", "/carrito");
+      alert("🔐 Debes iniciar sesión para continuar con tu compra");
+      navigate("/login");
+      return;
+    }
+    
+    setCheckoutStep(2);
+  };
+
+  // === FUNCIÓN PARA GUARDAR PEDIDO EN LOCALSTORAGE (SOLO USUARIO LOGUEADO) ===
   const guardarPedidoLocal = (pedidoData) => {
     try {
-      // Obtener usuario actual
       const usuarioStr = localStorage.getItem("usuario");
-      let usuario = null;
       
-      if (usuarioStr) {
-        usuario = JSON.parse(usuarioStr);
-      } else {
-        // Si no hay usuario logueado, usar datos de invitado
-        usuario = { email: `guest_${Date.now()}`, name: customerData.guestName };
-        localStorage.setItem("usuario", JSON.stringify(usuario));
+      if (!usuarioStr) {
+        console.error("No hay usuario logueado, no se guarda el pedido");
+        return null;
       }
-
-      // Obtener pedidos existentes del usuario
+      
+      const usuario = JSON.parse(usuarioStr);
       const storageKey = `pedidos_${usuario.email}`;
       const pedidosExistentesStr = localStorage.getItem(storageKey);
       let pedidosExistentes = pedidosExistentesStr ? JSON.parse(pedidosExistentesStr) : [];
 
-      // Crear nuevo pedido
       const nuevoPedido = {
         id: pedidosExistentes.length + 1,
         fecha: new Date().toISOString().split('T')[0],
@@ -97,13 +104,9 @@ export default function CartPage() {
         metodoPago: paymentMethods.find(m => m.id === selectedPaymentMethod)?.name || "No especificado"
       };
 
-      // Agregar al inicio (más reciente primero)
       const pedidosActualizados = [nuevoPedido, ...pedidosExistentes];
-      
-      // Guardar en localStorage
       localStorage.setItem(storageKey, JSON.stringify(pedidosActualizados));
       
-      // También guardar en un registro global de todos los pedidos (para admin)
       const allOrdersStr = localStorage.getItem("todos_los_pedidos");
       let allOrders = allOrdersStr ? JSON.parse(allOrdersStr) : [];
       allOrders.unshift({ ...nuevoPedido, userEmail: usuario.email });
@@ -135,7 +138,6 @@ export default function CartPage() {
     setLoading(true);
 
     try {
-      // Preparar datos para la API
       const saleData = {
         guestName: customerData.guestName,
         guestEmail: customerData.guestEmail || null,
@@ -152,7 +154,6 @@ export default function CartPage() {
       let pedidoGuardado = null;
 
       try {
-        // Intentar crear venta en la API
         response = await createPublicSale(saleData);
       } catch (apiError) {
         console.warn("API falló, usando modo offline:", apiError);
@@ -160,28 +161,21 @@ export default function CartPage() {
       }
       
       if (response && response.data && response.data.success) {
-        // Éxito en API
         setOrderComplete({
           id: response.data.id,
           numberBill: response.data.numberBill,
           total: response.data.total
         });
         
-        // También guardar localmente como respaldo
         pedidoGuardado = guardarPedidoLocal(saleData);
-        
         clearCart();
         setCheckoutStep(3);
-        
-        // Mostrar mensaje de éxito
         alert("✅ ¡Pedido realizado con éxito! Revisa 'Mis Pedidos' para seguimiento.");
         
       } else {
-        // Si la API falla o no hay conexión, guardar localmente
         pedidoGuardado = guardarPedidoLocal(saleData);
         
         if (pedidoGuardado) {
-          // Mostrar confirmación local
           setOrderComplete({
             id: pedidoGuardado.id,
             numberBill: `LOCAL-${Date.now()}`,
@@ -190,10 +184,9 @@ export default function CartPage() {
           
           clearCart();
           setCheckoutStep(3);
-          
           alert("✅ ¡Pedido guardado localmente! Se sincronizará cuando haya conexión.");
         } else {
-          throw new Error("No se pudo guardar el pedido localmente");
+          throw new Error("No se pudo guardar el pedido");
         }
       }
       
@@ -205,7 +198,6 @@ export default function CartPage() {
     }
   };
 
-  // Volver al paso 1 (carrito)
   const handleBackToCart = () => {
     setCheckoutStep(1);
   };
@@ -252,7 +244,6 @@ export default function CartPage() {
 
   return (
     <div className="container py-5" style={{ marginTop: '80px' }}>
-      {/* Encabezado */}
       <div className="row align-items-center mb-4">
         <div className="col-md-8">
           <h2 className="mb-0">
@@ -275,7 +266,6 @@ export default function CartPage() {
       </div>
 
       <div className="row">
-        {/* Left: productos o formulario */}
         <div className="col-lg-8 mb-4">
           {checkoutStep === 1 ? (
             <div className="card shadow-sm">
@@ -312,8 +302,8 @@ export default function CartPage() {
                               </div>
                             </div>
                            </td>
-                           <td>{formatCurrency(item.price)}</td>
-                           <td>
+                          <td>{formatCurrency(item.price)}</td>
+                          <td>
                             <div className="d-flex align-items-center" style={{ width: '100px' }}>
                               <button
                                 className="btn btn-sm btn-outline-secondary"
@@ -332,17 +322,17 @@ export default function CartPage() {
                                 +
                               </button>
                             </div>
-                           </td>
-                           <td>{formatCurrency(item.price * item.quantity)}</td>
-                           <td>
+                          </td>
+                          <td>{formatCurrency(item.price * item.quantity)}</td>
+                          <td>
                             <button
                               className="btn btn-sm btn-outline-danger"
                               onClick={() => removeFromCart(item.id)}
                             >
                               <i className="fas fa-trash-alt"></i>
                             </button>
-                           </td>
-                         </tr>
+                          </td>
+                        </tr>
                       ))}
                     </tbody>
                   </table>
@@ -412,7 +402,6 @@ export default function CartPage() {
           )}
         </div>
 
-        {/* Right: resumen y checkout */}
         <div className="col-lg-4">
           <div className="card shadow-sm">
             <div className="card-body">
@@ -438,7 +427,7 @@ export default function CartPage() {
               {checkoutStep === 1 && cart.length > 0 && (
                 <button
                   className="btn btn-primary btn-lg w-100 mb-2"
-                  onClick={() => setCheckoutStep(2)}
+                  onClick={verificarLoginYContinuar}
                 >
                   Continuar con el Pago
                 </button>
