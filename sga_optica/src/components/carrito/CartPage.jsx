@@ -56,11 +56,11 @@ export default function CartPage() {
     setCustomerData(prev => ({ ...prev, [name]: value }));
   };
 
-  // === FUNCIÓN PARA VERIFICAR LOGIN ANTES DE CONTINUAR ===
+  // === FUNCIÓN PARA VERIFICAR LOGIN ANTES DE CONTINUAR (CORREGIDA) ===
   const verificarLoginYContinuar = () => {
-    const usuario = localStorage.getItem("usuario");
+    const token = localStorage.getItem("token");
     
-    if (!usuario) {
+    if (!token) {
       localStorage.setItem("redirectAfterLogin", "/carrito");
       alert("🔐 Debes iniciar sesión para continuar con tu compra");
       navigate("/login");
@@ -70,18 +70,18 @@ export default function CartPage() {
     setCheckoutStep(2);
   };
 
-  // === FUNCIÓN PARA GUARDAR PEDIDO EN LOCALSTORAGE (SOLO USUARIO LOGUEADO) ===
+  // === FUNCIÓN PARA GUARDAR PEDIDO EN LOCALSTORAGE (CORREGIDA) ===
   const guardarPedidoLocal = (pedidoData) => {
     try {
-      const usuarioStr = localStorage.getItem("usuario");
+      const userStr = localStorage.getItem("user");
       
-      if (!usuarioStr) {
+      if (!userStr) {
         console.error("No hay usuario logueado, no se guarda el pedido");
         return null;
       }
       
-      const usuario = JSON.parse(usuarioStr);
-      const storageKey = `pedidos_${usuario.email}`;
+      const user = JSON.parse(userStr);
+      const storageKey = `pedidos_${user.email}`;
       const pedidosExistentesStr = localStorage.getItem(storageKey);
       let pedidosExistentes = pedidosExistentesStr ? JSON.parse(pedidosExistentesStr) : [];
 
@@ -97,7 +97,7 @@ export default function CartPage() {
         })),
         cliente: {
           nombre: customerData.guestName,
-          email: customerData.guestEmail || usuario.email,
+          email: customerData.guestEmail || user.email,
           telefono: customerData.guestPhone || "",
           direccion: customerData.guestAddress || ""
         },
@@ -109,7 +109,7 @@ export default function CartPage() {
       
       const allOrdersStr = localStorage.getItem("todos_los_pedidos");
       let allOrders = allOrdersStr ? JSON.parse(allOrdersStr) : [];
-      allOrders.unshift({ ...nuevoPedido, userEmail: usuario.email });
+      allOrders.unshift({ ...nuevoPedido, userEmail: user.email });
       localStorage.setItem("todos_los_pedidos", JSON.stringify(allOrders));
 
       return nuevoPedido;
@@ -301,7 +301,7 @@ export default function CartPage() {
                                 )}
                               </div>
                             </div>
-                           </td>
+                          </td>
                           <td>{formatCurrency(item.price)}</td>
                           <td>
                             <div className="d-flex align-items-center" style={{ width: '100px' }}>
@@ -322,17 +322,17 @@ export default function CartPage() {
                                 +
                               </button>
                             </div>
-                          </td>
-                          <td>{formatCurrency(item.price * item.quantity)}</td>
-                          <td>
+                           </td>
+                           <td>{formatCurrency(item.price * item.quantity)}</td>
+                           <td>
                             <button
                               className="btn btn-sm btn-outline-danger"
                               onClick={() => removeFromCart(item.id)}
                             >
                               <i className="fas fa-trash-alt"></i>
                             </button>
-                          </td>
-                        </tr>
+                           </td>
+                         </tr>
                       ))}
                     </tbody>
                   </table>

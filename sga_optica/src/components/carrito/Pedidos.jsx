@@ -7,7 +7,8 @@ const Pedidos = () => {
     const [usuarioActual, setUsuarioActual] = useState(null);
 
     useEffect(() => {
-        const user = localStorage.getItem("usuario");
+        // ✅ CORREGIDO: Cambiar "usuario" por "user"
+        const user = localStorage.getItem("user");
         if (user) {
             setUsuarioActual(JSON.parse(user));
         }
@@ -20,6 +21,7 @@ const Pedidos = () => {
     const cargarPedidos = () => {
         if (!usuarioActual) return;
 
+        // ✅ CORREGIDO: usuarioActual.email ya es correcto
         const pedidosGuardados = localStorage.getItem(`pedidos_${usuarioActual.email}`);
         
         if (pedidosGuardados) {
