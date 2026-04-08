@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import App from '../App'
 import PanelAdmin from './PanelAdmin'
 import ProductosPage from './ProductosPage'
+import AllProductsPage from './AllProductsPage'  // Importacion de todos los productos
+import Pedidos from './carrito/Pedidos' // Importacion del metodo de los pedidos 
 import Navbar from './Navbar'
 
 // Importar componentes de citas
@@ -24,7 +26,8 @@ import ResetPassword from './registro/ResetPassword'
 
 //Importar componente de carrito
 import CartPage from './carrito/CartPage'
-import Pedidos from './carrito/Pedidos'
+
+
 
 //Importar componente de notificación
 import MisNotificaciones from './campanita/MisNotificaciones';
@@ -36,6 +39,7 @@ function AppRouter() {
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/admin" element={<PanelAdmin />} />
+        <Route path="/productos" element={<AllProductsPage />} />  {/* ← NUEVA RUTA */}
         <Route path="/productos/:category" element={<ProductosPage />} />
         
         {/* Rutas de citas */}
@@ -58,6 +62,7 @@ function AppRouter() {
         {/* Ruta de carrito */}
         <Route path="/carrito" element={<CartPage />} />
         <Route path='/pedidos' element={<Pedidos />} />
+        
 
         {/* Ruta de notificaciones */}
         <Route path="/mis-notificaciones" element={<MisNotificaciones />} />
