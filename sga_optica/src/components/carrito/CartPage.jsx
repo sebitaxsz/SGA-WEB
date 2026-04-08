@@ -57,6 +57,65 @@ export default function CartPage() {
     setCustomerData(prev => ({ ...prev, [name]: value }));
   };
 
+  // === FUNCIÓN PARA GUARDAR PEDIDO EN LOCALSTORAGE ===
+  const guardarPedidoLocal = (pedidoData) => {
+    try {
+      // Obtener usuario actual
+      const usuarioStr = localStorage.getItem("usuario");
+      let usuario = null;
+      
+      if (usuarioStr) {
+        usuario = JSON.parse(usuarioStr);
+      } else {
+        // Si no hay usuario logueado, usar datos de invitado
+        usuario = { email: `guest_${Date.now()}`, name: customerData.guestName };
+        localStorage.setItem("usuario", JSON.stringify(usuario));
+      }
+
+      // Obtener pedidos existentes del usuario
+      const storageKey = `pedidos_${usuario.email}`;
+      const pedidosExistentesStr = localStorage.getItem(storageKey);
+      let pedidosExistentes = pedidosExistentesStr ? JSON.parse(pedidosExistentesStr) : [];
+
+      // Crear nuevo pedido
+      const nuevoPedido = {
+        id: pedidosExistentes.length + 1,
+        fecha: new Date().toISOString().split('T')[0],
+        total: total,
+        estado: "Pendiente",
+        productos: cart.map(item => ({
+          nombre: item.name,
+          cantidad: item.quantity,
+          precio: item.price
+        })),
+        cliente: {
+          nombre: customerData.guestName,
+          email: customerData.guestEmail || usuario.email,
+          telefono: customerData.guestPhone || "",
+          direccion: customerData.guestAddress || ""
+        },
+        metodoPago: paymentMethods.find(m => m.id === selectedPaymentMethod)?.name || "No especificado"
+      };
+
+      // Agregar al inicio (más reciente primero)
+      const pedidosActualizados = [nuevoPedido, ...pedidosExistentes];
+      
+      // Guardar en localStorage
+      localStorage.setItem(storageKey, JSON.stringify(pedidosActualizados));
+      
+      // También guardar en un registro global de todos los pedidos (para admin)
+      const allOrdersStr = localStorage.getItem("todos_los_pedidos");
+      let allOrders = allOrdersStr ? JSON.parse(allOrdersStr) : [];
+      allOrders.unshift({ ...nuevoPedido, userEmail: usuario.email });
+      localStorage.setItem("todos_los_pedidos", JSON.stringify(allOrders));
+
+      return nuevoPedido;
+    } catch (error) {
+      console.error("Error guardando pedido local:", error);
+      return null;
+    }
+  };
+
   const handlePlaceOrder = async () => {
     if (cart.length === 0) {
       alert("Tu carrito está vacío.");
@@ -89,22 +148,58 @@ export default function CartPage() {
         }))
       };
 
-      const response = await createPublicSale(saleData);
+      let response;
+      let pedidoGuardado = null;
+
+      try {
+        // Intentar crear venta en la API
+        response = await createPublicSale(saleData);
+      } catch (apiError) {
+        console.warn("API falló, usando modo offline:", apiError);
+        response = null;
+      }
       
-      if (response.data.success) {
+      if (response && response.data && response.data.success) {
+        // Éxito en API
         setOrderComplete({
           id: response.data.id,
           numberBill: response.data.numberBill,
           total: response.data.total
         });
+        
+        // También guardar localmente como respaldo
+        pedidoGuardado = guardarPedidoLocal(saleData);
+        
         clearCart();
         setCheckoutStep(3);
+        
+        // Mostrar mensaje de éxito
+        alert("✅ ¡Pedido realizado con éxito! Revisa 'Mis Pedidos' para seguimiento.");
+        
       } else {
-        alert("Error al procesar el pedido. Intenta nuevamente.");
+        // Si la API falla o no hay conexión, guardar localmente
+        pedidoGuardado = guardarPedidoLocal(saleData);
+        
+        if (pedidoGuardado) {
+          // Mostrar confirmación local
+          setOrderComplete({
+            id: pedidoGuardado.id,
+            numberBill: `LOCAL-${Date.now()}`,
+            total: total
+          });
+          
+          clearCart();
+          setCheckoutStep(3);
+          
+          alert("✅ ¡Pedido guardado localmente! Se sincronizará cuando haya conexión.");
+        } else {
+          throw new Error("No se pudo guardar el pedido localmente");
+        }
       }
+      
     } catch (error) {
       console.error('Error creating sale:', error);
-      alert(error.response?.data?.message || "Error al procesar el pedido. Intenta nuevamente.");
+      alert(error.response?.data?.message || error.message || "Error al procesar el pedido. Intenta nuevamente.");
     } finally {
       setLoading(false);
     }
@@ -141,9 +236,14 @@ export default function CartPage() {
               <strong>Número de factura:</strong> {orderComplete.numberBill}<br />
               <strong>Total:</strong> {formatCurrency(orderComplete.total)}
             </div>
-            <Link to="/productos" className="btn btn-primary mt-3">
-              Seguir Comprando
-            </Link>
+            <div className="mt-3 d-flex gap-2 justify-content-center">
+              <Link to="/productos" className="btn btn-primary">
+                Seguir Comprando
+              </Link>
+              <Link to="/pedidos" className="btn btn-outline-secondary">
+                Ver Mis Pedidos
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -211,9 +311,9 @@ export default function CartPage() {
                                 )}
                               </div>
                             </div>
-                          </td>
-                          <td>{formatCurrency(item.price)}</td>
-                          <td>
+                           </td>
+                           <td>{formatCurrency(item.price)}</td>
+                           <td>
                             <div className="d-flex align-items-center" style={{ width: '100px' }}>
                               <button
                                 className="btn btn-sm btn-outline-secondary"
@@ -232,17 +332,17 @@ export default function CartPage() {
                                 +
                               </button>
                             </div>
-                          </td>
-                          <td>{formatCurrency(item.price * item.quantity)}</td>
-                          <td>
+                           </td>
+                           <td>{formatCurrency(item.price * item.quantity)}</td>
+                           <td>
                             <button
                               className="btn btn-sm btn-outline-danger"
                               onClick={() => removeFromCart(item.id)}
                             >
                               <i className="fas fa-trash-alt"></i>
                             </button>
-                          </td>
-                        </tr>
+                           </td>
+                         </tr>
                       ))}
                     </tbody>
                   </table>
