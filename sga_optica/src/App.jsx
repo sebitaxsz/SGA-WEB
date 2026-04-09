@@ -1,4 +1,4 @@
-// App.jsx - Eliminar la importación y uso del Navbar (ya no es necesario)
+// App.jsx
 import React, { useEffect, useState, useCallback } from 'react'
 import './App.css'
 import { Link } from 'react-router-dom'
@@ -13,7 +13,6 @@ function App() {
     "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=400&q=80",
     "https://images.unsplash.com/photo-1615468822882-4828d2602857?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     "https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=400&q=80",
-    "https://images.unsplash.com/photo-1763013373779-19e259f95b41?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=400&q=80",
   ]
 
   const nextSlide = useCallback(() => {
@@ -22,10 +21,6 @@ function App() {
 
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev - 1 + carouselImages.length) % carouselImages.length)
-  }
-
-  const handleScheduleAppointment = () => {
-    window.location.href = '/citas/nueva'
   }
 
   useEffect(() => {
@@ -120,36 +115,39 @@ function App() {
             </div>
 
             <div className="row g-4">
+              {/* Categoría 1 - Accesorios */}
               <div className="col-md-4">
                 <div className="card h-100 border-0 shadow-sm hover-card">
                   <div className="card-body text-center p-4">
                     <div className="display-1 mb-3">🕶️</div>
-                    <h3 className="card-title fw-bold mb-3">Gafas de Sol</h3>
+                    <h3 className="card-title fw-bold mb-3">Accesorios</h3>
                     <p className="card-text text-muted mb-4">
-                      Protección UV 400, estilos modernos y diseño exclusivo para cada ocasión.
+                      Encuentra los mejores accesorios para tus gafas: estuches, limpiadores, cadenas y más.
                     </p>
-                    <Link to="/productos/gafas-sol" className="btn btn-primary px-4">
+                    <Link to="/productos/accesorios" className="btn btn-primary px-4">
                       Ver Productos
                     </Link>
                   </div>
                 </div>
               </div>
 
+              {/* Categoría 2 - Lentes */}
               <div className="col-md-4">
                 <div className="card h-100 border-0 shadow-sm hover-card">
                   <div className="card-body text-center p-4">
                     <div className="display-1 mb-3">👓</div>
-                    <h3 className="card-title fw-bold mb-3">Gafas Formuladas</h3>
+                    <h3 className="card-title fw-bold mb-3">Lentes</h3>
                     <p className="card-text text-muted mb-4">
                       Lentes de alta calidad con tecnología antirreflejo y protección blue light.
                     </p>
-                    <Link to="/productos/gafas-formuladas" className="btn btn-primary px-4">
+                    <Link to="/productos/lentes" className="btn btn-primary px-4">
                       Ver Productos
                     </Link>
                   </div>
                 </div>
               </div>
 
+              {/* Categoría 3 - Lentes de Contacto */}
               <div className="col-md-4">
                 <div className="card h-100 border-0 shadow-sm hover-card">
                   <div className="card-body text-center p-4">
@@ -168,159 +166,7 @@ function App() {
           </div>
         </section>
 
-        {/* SECCIÓN 3: PRODUCTOS DESTACADOS */}
-        <section className="py-5">
-          <div className="container">
-            <div className="text-center mb-5">
-              <h1 className="display-4 fw-bold text-primary mb-3">Productos Destacados</h1>
-              <p className="lead text-muted">Los productos más vendidos y mejor valorados</p>
-            </div>
-
-            <div className="row g-4">
-              <div className="col-lg-3 col-md-6">
-                <div className="card h-100 border-0 shadow-sm product-card">
-                  <div className="card-body text-center p-4">
-                    <div className="product-icon display-1 text-primary mb-3">🕶️</div>
-                    <h4 className="card-title fw-bold mb-2">Gafas Aviador Classic</h4>
-                    <p className="card-text text-muted small mb-2">
-                      Protección UV 400, marco metálico, incluye estuche
-                    </p>
-                    <p className="card-text fw-bold text-primary fs-4 mb-3">$89.990</p>
-                    <button
-                      className="btn btn-outline-primary w-100"
-                      onClick={() => {
-                        addToCart({
-                          id: 1,
-                          name: "Gafas Aviador Classic",
-                          price: 89990,
-                          displayPrice: "$89.990",
-                          descripcion: "Protección UV 400, marco metálico, incluye estuche"
-                        });
-                        setAddedId(1);
-                        setTimeout(() => setAddedId(null), 2000);
-                      }}
-                    >
-                      <i className="fas fa-cart-plus me-2"></i>
-                      Añadir al Carrito
-                    </button>
-                    {addedId === 1 && (
-                      <div className='alert alert-success mt-2 p-2 text-center'>
-                        Producto añadido al carrito
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-lg-3 col-md-6">
-                <div className="card h-100 border-0 shadow-sm product-card">
-                  <div className="card-body text-center p-4">
-                    <div className="product-icon display-1 text-primary mb-3">👓</div>
-                    <h4 className="card-title fw-bold mb-2">Lentes Progressivos Elite</h4>
-                    <p className="card-text text-muted small mb-2">
-                      Visión perfecta a todas las distancias, antirreflejo
-                    </p>
-                    <p className="card-text fw-bold text-primary fs-4 mb-3">$189.990</p>
-                    <button
-                      className="btn btn-outline-primary w-100"
-                      onClick={() => {
-                        addToCart({
-                          id: 2,
-                          name: "Lentes Progresivos Elite",
-                          price: 189990,
-                          displayPrice: "$189.990",
-                          descripcion: "Vision perfecta a todas las distancias, antirreflejo"
-                        });
-                        setAddedId(2);
-                        setTimeout(() => setAddedId(null), 2000);
-                      }}
-                    >
-                      <i className="fas fa-cart-plus me-2"></i>
-                      Añadir al Carrito
-                    </button>
-                    {addedId === 2 && (
-                      <div className='alert alert-success mt-2 p-2 text-center'>
-                        Producto añadido al carrito
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-lg-3 col-md-6">
-                <div className="card h-100 border-0 shadow-sm product-card">
-                  <div className="card-body text-center p-4">
-                    <div className="product-icon display-1 text-primary mb-3">🔍</div>
-                    <h4 className="card-title fw-bold mb-2">Lentes de Contacto Diarias</h4>
-                    <p className="card-text text-muted small mb-2">
-                      Pack de 30 lentes, hidratación prolongada, máxima comodidad
-                    </p>
-                    <p className="card-text fw-bold text-primary fs-4 mb-3">$59.990</p>
-                    <button
-                      className="btn btn-outline-primary w-100"
-                      onClick={() => {
-                        addToCart({
-                          id: 3,
-                          name: "Lentes de Contacto Diarias",
-                          price: 59990,
-                          displayPrice: "$59.990",
-                          descripcion: "Pack de 30 lentes, hidratación prolongada, máxima comodidad"
-                        });
-                        setAddedId(3);
-                        setTimeout(() => setAddedId(null), 2000);
-                      }}
-                    >
-                      <i className="fas fa-cart-plus me-2"></i>
-                      Añadir al Carrito
-                    </button>
-                    {addedId === 3 && (
-                      <div className='alert alert-success mt-2 p-2 text-center'>
-                        Producto añadido al carrito
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-lg-3 col-md-6">
-                <div className="card h-100 border-0 shadow-sm product-card">
-                  <div className="card-body text-center p-4">
-                    <div className="product-icon display-1 text-primary mb-3">🕶️</div>
-                    <h4 className="card-title fw-bold mb-2">Gafas Deportivas Pro</h4>
-                    <p className="card-text text-muted small mb-2">
-                      Antideslizantes, lentes polarizados, resistencia al impacto
-                    </p>
-                    <p className="card-text fw-bold text-primary fs-4 mb-3">$129.990</p>
-                    <button
-                      className="btn btn-outline-primary w-100"
-                      onClick={() => {
-                        addToCart({
-                          id: 4,
-                          name: "Gafas Deportivas Pro",
-                          price: 129990,
-                          displayPrice: "$129.990",
-                          descripcion: "Antideslizantes, lents polarizados, resistencia al impacto"
-                        });
-                        setAddedId(4);
-                        setTimeout(() => setAddedId(null), 2000);
-                      }}
-                    >
-                      <i className="fas fa-cart-plus me-2"></i>
-                      Añadir al Carrito
-                    </button>
-                    {addedId === 4 && (
-                      <div className='alert alert-success mt-2 p-2 text-center'>
-                        Producto añadido al carrito
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* SECCIÓN 4: AGENDA TU CITA */}
+        {/* SECCIÓN 3: AGENDA TU CITA */}
         <section className="py-5 bg-primary text-white">
           <div className="container">
             <div className="row align-items-center">
@@ -330,16 +176,10 @@ function App() {
                   Agenda una cita con nuestros especialistas. Realizamos exámenes completos 
                   de la vista y te asesoramos en la elección de tus lentes.
                 </p>
-                <div className="d-flex gap-3">
-                  <Link to="/citas/nueva" className="btn btn-light btn-lg px-4">
-                    <i className="fas fa-calendar-check me-2"></i>
-                    Agendar Cita
-                  </Link>
-                  <Link to="/clinica" className="btn btn-outline-light btn-lg px-4">
-                    <i className="fas fa-stethoscope me-2"></i>
-                    Nuestros Servicios
-                  </Link>
-                </div>
+                <Link to="/citas/nueva" className="btn btn-light btn-lg px-4">
+                  <i className="fas fa-calendar-check me-2"></i>
+                  Agendar Cita
+                </Link>
               </div>
               <div className="col-lg-4 text-center">
                 <div className="display-1">👁️</div>
@@ -348,7 +188,7 @@ function App() {
           </div>
         </section>
 
-        {/* SECCIÓN 5: INFORMACIÓN DE CONTACTO */}
+        {/* SECCIÓN 4: INFORMACIÓN DE CONTACTO */}
         <section className="py-5">
           <div className="container">
             <div className="row g-4">
@@ -406,23 +246,18 @@ function App() {
               <h5 className="fw-bold mb-4">Productos</h5>
               <ul className="list-unstyled">
                 <li className="mb-2">
-                  <Link to="/productos/gafas-sol" className="text-white-50 text-decoration-none">
-                    Gafas de Sol
+                  <Link to="/productos/accesorios" className="text-white-50 text-decoration-none">
+                    Accesorios
                   </Link>
                 </li>
                 <li className="mb-2">
-                  <Link to="/productos/gafas-formuladas" className="text-white-50 text-decoration-none">
-                    Gafas Formuladas
+                  <Link to="/productos/lentes" className="text-white-50 text-decoration-none">
+                    Lentes
                   </Link>
                 </li>
                 <li className="mb-2">
                   <Link to="/productos/lentes-contacto" className="text-white-50 text-decoration-none">
                     Lentes de Contacto
-                  </Link>
-                </li>
-                <li className="mb-2">
-                  <Link to="/productos/gafas-deportivas" className="text-white-50 text-decoration-none">
-                    Gafas Deportivas
                   </Link>
                 </li>
               </ul>

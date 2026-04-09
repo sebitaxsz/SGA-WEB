@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useCart } from './carrito/CartContext'
-import { getProducts, getCategories } from '../services/public.service'
+import { getProducts } from '../services/public.service'
 
 const ProductosPage = () => {
   const { category } = useParams()
@@ -11,19 +11,18 @@ const ProductosPage = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Mapeo de URLs amigables a category_id
+  // 🔧 NUEVO MAPEO de URLs amigables a IDs de categoría (según tu base de datos)
+  // Ajusta estos IDs según los category_id que tengas en tu base de datos
   const categoryMapping = {
-    'gafas-sol': 1,
-    'gafas-formuladas': 2,
-    'lentes-contacto': 3,
-    'gafas-deportivas': 4
+    'accesorios': 3,        // ID para accesorios
+    'lentes': 1,            // ID para lentes formulados
+    'lentes-contacto': 2    // ID para lentes de contacto
   }
 
   const categoryNames = {
-    'gafas-sol': 'Gafas de Sol',
-    'gafas-formuladas': 'Gafas Formuladas',
-    'lentes-contacto': 'Lentes de Contacto',
-    'gafas-deportivas': 'Gafas Deportivas'
+    'accesorios': 'Accesorios',
+    'lentes': 'Lentes',
+    'lentes-contacto': 'Lentes de Contacto'
   }
 
   useEffect(() => {
@@ -40,7 +39,7 @@ const ProductosPage = () => {
           return
         }
         
-        // Obtener todos los productos y filtrar por categoría
+        // Obtener productos y filtrar por categoría
         const response = await getProducts({ limit: 100 })
         const allProducts = response.data?.data || response.data || []
         
@@ -54,7 +53,7 @@ const ProductosPage = () => {
           nombre: product.nameProduct,
           precio: `$${product.unitPrice.toLocaleString('es-CO')}`,
           price: product.unitPrice,
-          descripcion: product.description,
+          descripcion: product.description || 'Sin descripción',
           imagen: product.imagen ? `https://7l77sjp2-3002.use2.devtunnels.ms${product.imagen}` : null,
           stock: product.stock
         }))
@@ -119,13 +118,13 @@ const ProductosPage = () => {
 
         {products.length === 0 ? (
           <div className="alert alert-info">
-            No hay productos disponibles en esta categoría.
+            No hay productos disponibles en {categoryNames[category] || 'esta categoría'}.
           </div>
         ) : (
           <div className="row">
             {products.map(producto => (
               <div key={producto.id} className="col-md-4 mb-4">
-                <div className="card h-100">
+                <div className="card h-100 shadow-sm">
                   {producto.imagen ? (
                     <img
                       src={producto.imagen}
@@ -146,8 +145,8 @@ const ProductosPage = () => {
                   )}
                   <div className="card-body">
                     <h5 className="card-title">{producto.nombre}</h5>
-                    <p className="card-text">{producto.descripcion}</p>
-                    <p className="fw-bold text-primary">{producto.precio}</p>
+                    <p className="card-text text-muted small">{producto.descripcion.substring(0, 80)}...</p>
+                    <p className="fw-bold text-primary fs-4">{producto.precio}</p>
                     <p className="text-muted small">Stock: {producto.stock} unidades</p>
                     
                     <button
@@ -159,8 +158,9 @@ const ProductosPage = () => {
                     </button>
                     
                     {message === producto.id && (
-                      <div className="alert alert-success mt-2 p-2 text-center">
-                        ¡Producto añadido al carrito!
+                      <div className="alert alert-success mt-2 p-2 text-center small">
+                        <i className="fas fa-check-circle me-1"></i>
+                        ¡Producto añadido!
                       </div>
                     )}
                   </div>
@@ -171,6 +171,7 @@ const ProductosPage = () => {
         )}
 
         <Link to="/" className="btn btn-outline-secondary mt-3">
+          <i className="fas fa-arrow-left me-2"></i>
           Volver al Inicio
         </Link>
       </div>

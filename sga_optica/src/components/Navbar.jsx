@@ -115,6 +115,7 @@ const Navbar = () => {
     }
   }
 
+  // 🔧 MODIFICADO: Eliminado "Consultas" de la sección Clínica
   const menuItems = {
     agenda: [
       { id: 'nueva-cita', name: 'Nueva Cita', icon: 'fa-calendar-plus', path: '/citas/nueva' },
@@ -122,7 +123,6 @@ const Navbar = () => {
       { id: 'calendario', name: 'Calendario', icon: 'fa-calendar', path: '/citas/calendario' }
     ],
     clinica: [
-      { id: 'consultas', name: 'Consultas', icon: 'fa-stethoscope', path: '/clinica/consultas' },
       { id: 'examenes', name: 'Exámenes', icon: 'fa-eye-dropper', path: '/clinica/examenes' },
       { id: 'servicios-clinicos', name: 'Servicios Clínicos', icon: 'fa-hand-holding-medical', path: '/clinica/servicios' }
     ]
@@ -155,31 +155,31 @@ const Navbar = () => {
                 </Link>
               </li>
               
-              {/* Solo mostrar opciones de agenda/citas para usuarios no-optometristas? 
-                  Los optometristas también pueden ver citas, pero no crear nuevas */}
-            <li className="nav-item dropdown">
-  <Link className="nav-link dropdown-toggle text-dark fs-5 fw-semibold px-3" to="#" role="button" data-bs-toggle="dropdown">
-    AGENDA TU CITA
-  </Link>
-  <ul className="dropdown-menu">
-    {/* Los optometristas NO pueden crear citas, solo verlas */}
-    {userRole !== 'optometrist' && (
-      <li>
-        <Link className="dropdown-item" to="/citas/nueva">
-          <i className="fas fa-calendar-plus me-2 text-primary"></i>
-          Nueva Cita
-        </Link>
-      </li>
-    )}
-    <li>
-      <Link className="dropdown-item" to="/citas/ver">
-        <i className="fas fa-calendar-alt me-2 text-primary"></i>
-        {userRole === 'optometrist' ? 'Gestionar Citas' : 'Mis Citas'}
-      </Link>
-    </li>
-  </ul>
-</li>
+              {/* AGENDA TU CITA */}
+              <li className="nav-item dropdown">
+                <Link className="nav-link dropdown-toggle text-dark fs-5 fw-semibold px-3" to="#" role="button" data-bs-toggle="dropdown">
+                  AGENDA TU CITA
+                </Link>
+                <ul className="dropdown-menu">
+                  {/* Los optometristas NO pueden crear citas, solo verlas */}
+                  {userRole !== 'optometrist' && (
+                    <li>
+                      <Link className="dropdown-item" to="/citas/nueva">
+                        <i className="fas fa-calendar-plus me-2 text-primary"></i>
+                        Nueva Cita
+                      </Link>
+                    </li>
+                  )}
+                  <li>
+                    <Link className="dropdown-item" to="/citas/ver">
+                      <i className="fas fa-calendar-alt me-2 text-primary"></i>
+                      {userRole === 'optometrist' ? 'Gestionar Citas' : 'Mis Citas'}
+                    </Link>
+                  </li>
+                </ul>
+              </li>
               
+              {/* CLÍNICA - MODIFICADO: solo Exámenes y Servicios Clínicos */}
               <li className="nav-item dropdown">
                 <Link className="nav-link dropdown-toggle text-dark fs-5 fw-semibold px-3" to="#" role="button" data-bs-toggle="dropdown">
                   CLÍNICA
