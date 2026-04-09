@@ -170,18 +170,40 @@ const PanelAdmin = () => {
   const [unreadCount, setUnreadCount] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
+  // 🔧 Agregar clase al body para ocultar navbar (sin afectar la carga)
+  useEffect(() => {
+    document.body.classList.add('admin-active')
+    return () => {
+      document.body.classList.remove('admin-active')
+    }
+  }, [])
+
+  // 🔧 Autenticación - mantener igual
   useEffect(() => {
     const token = localStorage.getItem('token')
     const user = localStorage.getItem('user')
-    if (!token || !user) { navigate('/login'); return }
+    if (!token || !user) { 
+      navigate('/login')
+      setLoading(false)
+      return 
+    }
     try {
       const userData = JSON.parse(user)
-      const roleVal = (userData.role || userData.role_name || '').toLowerCase(); const isUserAdmin = roleVal === 'admin' || roleVal === 'administrador' || userData.role_id === 1
-      if (!isUserAdmin) { navigate('/'); return }
+      const roleVal = (userData.role || userData.role_name || '').toLowerCase()
+      const isUserAdmin = roleVal === 'admin' || roleVal === 'administrador' || userData.role_id === 1
+      if (!isUserAdmin) { 
+        navigate('/')
+        setLoading(false)
+        return 
+      }
       setIsAdmin(true)
       setUserName(userData.nombre || userData.firstName || 'Administrador')
-    } catch { navigate('/') }
-    finally { setLoading(false) }
+    } catch (error) { 
+      console.error('Error:', error)
+      navigate('/')
+    } finally { 
+      setLoading(false) 
+    }
   }, [navigate])
 
   const fetchNotifications = async () => {
@@ -193,7 +215,11 @@ const PanelAdmin = () => {
     } catch (e) { console.error(e) }
   }
 
-  useEffect(() => { if (isAdmin) fetchNotifications() }, [isAdmin])
+  useEffect(() => { 
+    if (isAdmin) {
+      fetchNotifications()
+    }
+  }, [isAdmin])
 
   const handleMarkRead = async (id) => {
     try {
@@ -204,7 +230,9 @@ const PanelAdmin = () => {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('token'); localStorage.removeItem('user'); localStorage.removeItem('rememberMe')
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('rememberMe')
     navigate('/login')
   }
 
@@ -223,7 +251,10 @@ const PanelAdmin = () => {
     return <Clock size={15} style={{color:'#60a5fa'}} />
   }
 
-  const navigate_section = (id) => { setActiveSection(id); setShowNotifications(false) }
+  const navigate_section = (id) => { 
+    setActiveSection(id)
+    setShowNotifications(false)
+  }
 
   const renderSection = () => {
     switch(activeSection) {
@@ -242,16 +273,18 @@ const PanelAdmin = () => {
     }
   }
 
-  if (loading) return (
-    <div className="admin-panel" style={{display:'flex',justifyContent:'center',alignItems:'center',minHeight:'100vh'}}>
-      <div className="spinner" />
-    </div>
-  )
+  if (loading) {
+    return (
+      <div className="admin-panel" style={{display:'flex',justifyContent:'center',alignItems:'center',minHeight:'100vh'}}>
+        <div className="spinner" />
+      </div>
+    )
+  }
+  
   if (!isAdmin) return null
 
   return (
     <div className={`admin-panel new-panel ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-
       {/* Sidebar */}
       <aside className="admin-sidebar new-sidebar">
         <div className="sidebar-header">

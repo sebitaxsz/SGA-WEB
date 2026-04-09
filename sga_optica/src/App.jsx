@@ -1,3 +1,4 @@
+// App.jsx - Eliminar la importación y uso del Navbar (ya no es necesario)
 import React, { useEffect, useState, useCallback } from 'react'
 import './App.css'
 import { Link } from 'react-router-dom'
@@ -7,7 +8,7 @@ function App() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const { addToCart } = useCart();
   const [addedId, setAddedId] = useState(null)
-  // Imágenes del carrusel
+  
   const carouselImages = [
     "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=400&q=80",
     "https://images.unsplash.com/photo-1615468822882-4828d2602857?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -24,19 +25,14 @@ function App() {
   }
 
   const handleScheduleAppointment = () => {
-    alert('¡Funcionalidad de agendar cita! Esta función abrirá un formulario para agendar citas.')
-    // Aquí podrías redirigir a una página de citas o abrir un modal
+    window.location.href = '/citas/nueva'
   }
 
-  // Carrusel automático
   useEffect(() => {
     const interval = setInterval(() => {
       nextSlide()
     }, 5000)
-
-    return () => {
-      clearInterval(interval)
-    }
+    return () => clearInterval(interval)
   }, [nextSlide])
 
   return (
@@ -124,7 +120,6 @@ function App() {
             </div>
 
             <div className="row g-4">
-              {/* Categoría 1 */}
               <div className="col-md-4">
                 <div className="card h-100 border-0 shadow-sm hover-card">
                   <div className="card-body text-center p-4">
@@ -140,7 +135,6 @@ function App() {
                 </div>
               </div>
 
-              {/* Categoría 2 */}
               <div className="col-md-4">
                 <div className="card h-100 border-0 shadow-sm hover-card">
                   <div className="card-body text-center p-4">
@@ -156,7 +150,6 @@ function App() {
                 </div>
               </div>
 
-              {/* Categoría 3 */}
               <div className="col-md-4">
                 <div className="card h-100 border-0 shadow-sm hover-card">
                   <div className="card-body text-center p-4">
@@ -184,7 +177,6 @@ function App() {
             </div>
 
             <div className="row g-4">
-              {/* Producto 1 */}
               <div className="col-lg-3 col-md-6">
                 <div className="card h-100 border-0 shadow-sm product-card">
                   <div className="card-body text-center p-4">
@@ -220,7 +212,6 @@ function App() {
                 </div>
               </div>
 
-              {/* Producto 2 */}
               <div className="col-lg-3 col-md-6">
                 <div className="card h-100 border-0 shadow-sm product-card">
                   <div className="card-body text-center p-4">
@@ -256,7 +247,6 @@ function App() {
                 </div>
               </div>
 
-              {/* Producto 3 */}
               <div className="col-lg-3 col-md-6">
                 <div className="card h-100 border-0 shadow-sm product-card">
                   <div className="card-body text-center p-4">
@@ -292,7 +282,6 @@ function App() {
                 </div>
               </div>
 
-              {/* Producto 4 */}
               <div className="col-lg-3 col-md-6">
                 <div className="card h-100 border-0 shadow-sm product-card">
                   <div className="card-body text-center p-4">
@@ -342,13 +331,10 @@ function App() {
                   de la vista y te asesoramos en la elección de tus lentes.
                 </p>
                 <div className="d-flex gap-3">
-                  <button 
-                    className="btn btn-light btn-lg px-4"
-                    onClick={handleScheduleAppointment}
-                  >
+                  <Link to="/citas/nueva" className="btn btn-light btn-lg px-4">
                     <i className="fas fa-calendar-check me-2"></i>
                     Agendar Cita
-                  </button>
+                  </Link>
                   <Link to="/clinica" className="btn btn-outline-light btn-lg px-4">
                     <i className="fas fa-stethoscope me-2"></i>
                     Nuestros Servicios
@@ -412,11 +398,10 @@ function App() {
         </section>
       </main>
 
-      {/* FOOTER COMPLETO */}
+      {/* FOOTER */}
       <footer className="bg-dark text-white py-5">
         <div className="container">
           <div className="row g-4">
-            {/* Columna 1 - Productos */}
             <div className="col-lg-3 col-md-6">
               <h5 className="fw-bold mb-4">Productos</h5>
               <ul className="list-unstyled">
@@ -443,34 +428,32 @@ function App() {
               </ul>
             </div>
 
-            {/* Columna 2 - Servicios */}
             <div className="col-lg-3 col-md-6">
               <h5 className="fw-bold mb-4">Servicios</h5>
               <ul className="list-unstyled">
                 <li className="mb-2">
-                  <a href="#" className="text-white-50 text-decoration-none">
+                  <Link to="/clinica/examenes" className="text-white-50 text-decoration-none">
                     Exámenes de la Vista
-                  </a>
+                  </Link>
                 </li>
                 <li className="mb-2">
-                  <a href="#" className="text-white-50 text-decoration-none">
+                  <Link to="/clinica/servicios" className="text-white-50 text-decoration-none">
                     Ajuste de Monturas
-                  </a>
+                  </Link>
                 </li>
                 <li className="mb-2">
-                  <a href="#" className="text-white-50 text-decoration-none">
+                  <Link to="/clinica/servicios" className="text-white-50 text-decoration-none">
                     Limpieza Profesional
-                  </a>
+                  </Link>
                 </li>
                 <li className="mb-2">
-                  <a href="#" className="text-white-50 text-decoration-none">
+                  <Link to="/clinica/servicios" className="text-white-50 text-decoration-none">
                     Reparaciones
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>
 
-            {/* Columna 3 - Contacto */}
             <div className="col-lg-3 col-md-6">
               <h5 className="fw-bold mb-4">Contacto</h5>
               <ul className="list-unstyled">
@@ -489,7 +472,6 @@ function App() {
               </ul>
             </div>
 
-            {/* Columna 4 - Newsletter */}
             <div className="col-lg-3 col-md-6">
               <h5 className="fw-bold mb-4">Suscríbete</h5>
               <div className="mb-3">

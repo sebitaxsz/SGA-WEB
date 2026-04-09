@@ -3,8 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import App from '../App'
 import PanelAdmin from './PanelAdmin'
 import ProductosPage from './ProductosPage'
-import AllProductsPage from './AllProductsPage'  // Importacion de todos los productos
-import Pedidos from './carrito/Pedidos' // Importacion del metodo de los pedidos 
+import AllProductsPage from './AllProductsPage'
+import Pedidos from './carrito/Pedidos'
 import Navbar from './Navbar'
 
 // Importar componentes de citas
@@ -27,45 +27,44 @@ import ResetPassword from './registro/ResetPassword'
 //Importar componente de carrito
 import CartPage from './carrito/CartPage'
 
-
-
 //Importar componente de notificación
 import MisNotificaciones from './campanita/MisNotificaciones';
+
+// Layout que incluye Navbar (para todas las rutas EXCEPTO admin)
+const LayoutWithNavbar = ({ children }) => {
+  return (
+    <>
+      <Navbar />
+      {children}
+    </>
+  )
+}
 
 function AppRouter() {
   return (
     <Router>
-      <Navbar />
       <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/admin" element={<PanelAdmin />} />
-        <Route path="/productos" element={<AllProductsPage />} />  {/* ← NUEVA RUTA */}
-        <Route path="/productos/:category" element={<ProductosPage />} />
-        
-        {/* Rutas de citas */}
-        <Route path="/citas/nueva" element={<NuevaCita />} />
-        <Route path="/citas/ver" element={<VerCitas />} />
-        <Route path="/citas/calendario" element={<CalendarioCitas />} />
-        
-        {/* Rutas de clínica */}
-        <Route path="/clinica/consultas" element={<Consultas />} />
-        <Route path="/clinica/examenes" element={<Examenes />} />
-        <Route path="/clinica/servicios" element={<Servicios />} />
+        {/* Rutas CON Navbar */}
+        <Route path="/" element={<LayoutWithNavbar><App /></LayoutWithNavbar>} />
+        <Route path="/productos" element={<LayoutWithNavbar><AllProductsPage /></LayoutWithNavbar>} />
+        <Route path="/productos/:category" element={<LayoutWithNavbar><ProductosPage /></LayoutWithNavbar>} />
+        <Route path="/citas/nueva" element={<LayoutWithNavbar><NuevaCita /></LayoutWithNavbar>} />
+        <Route path="/citas/ver" element={<LayoutWithNavbar><VerCitas /></LayoutWithNavbar>} />
+        <Route path="/citas/calendario" element={<LayoutWithNavbar><CalendarioCitas /></LayoutWithNavbar>} />
+        <Route path="/clinica/consultas" element={<LayoutWithNavbar><Consultas /></LayoutWithNavbar>} />
+        <Route path="/clinica/examenes" element={<LayoutWithNavbar><Examenes /></LayoutWithNavbar>} />
+        <Route path="/clinica/servicios" element={<LayoutWithNavbar><Servicios /></LayoutWithNavbar>} />
+        <Route path="/login" element={<LayoutWithNavbar><Login /></LayoutWithNavbar>} />
+        <Route path="/register" element={<LayoutWithNavbar><Register /></LayoutWithNavbar>} />
+        <Route path="/profile" element={<LayoutWithNavbar><Profile /></LayoutWithNavbar>} />
+        <Route path="/forgot-password" element={<LayoutWithNavbar><ForgotPassword /></LayoutWithNavbar>} />
+        <Route path="/reset-password" element={<LayoutWithNavbar><ResetPassword /></LayoutWithNavbar>} />
+        <Route path="/carrito" element={<LayoutWithNavbar><CartPage /></LayoutWithNavbar>} />
+        <Route path="/pedidos" element={<LayoutWithNavbar><Pedidos /></LayoutWithNavbar>} />
+        <Route path="/mis-notificaciones" element={<LayoutWithNavbar><MisNotificaciones /></LayoutWithNavbar>} />
 
-        {/* Rutas de registro */}
-        <Route path='/login' element={<Login />} />
-        <Route path='/register' element={<Register />} />
-        <Route path='/profile' element={<Profile />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-
-        {/* Ruta de carrito */}
-        <Route path="/carrito" element={<CartPage />} />
-        <Route path='/pedidos' element={<Pedidos />} />
-        
-
-        {/* Ruta de notificaciones */}
-        <Route path="/mis-notificaciones" element={<MisNotificaciones />} />
+        {/* Ruta de ADMIN - SIN Navbar */}
+        <Route path="/admin/*" element={<PanelAdmin />} />
       </Routes>
     </Router>
   )
