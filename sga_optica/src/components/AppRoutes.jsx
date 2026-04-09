@@ -10,10 +10,8 @@ import Navbar from './Navbar'
 // Importar componentes de citas
 import NuevaCita from './citas/NuevaCita'
 import VerCitas from './citas/VerCitas'
-import CalendarioCitas from './citas/CalendarioCitas'
 
 // Importar componentes de clínica
-import Consultas from './Clinica/Consultas'
 import Examenes from './Clinica/Examenes'
 import Servicios from './Clinica/Servicios'
 
@@ -50,8 +48,6 @@ function AppRouter() {
         <Route path="/productos/:category" element={<LayoutWithNavbar><ProductosPage /></LayoutWithNavbar>} />
         <Route path="/citas/nueva" element={<LayoutWithNavbar><NuevaCita /></LayoutWithNavbar>} />
         <Route path="/citas/ver" element={<LayoutWithNavbar><VerCitas /></LayoutWithNavbar>} />
-        <Route path="/citas/calendario" element={<LayoutWithNavbar><CalendarioCitas /></LayoutWithNavbar>} />
-        <Route path="/clinica/consultas" element={<LayoutWithNavbar><Consultas /></LayoutWithNavbar>} />
         <Route path="/clinica/examenes" element={<LayoutWithNavbar><Examenes /></LayoutWithNavbar>} />
         <Route path="/clinica/servicios" element={<LayoutWithNavbar><Servicios /></LayoutWithNavbar>} />
         <Route path="/login" element={<LayoutWithNavbar><Login /></LayoutWithNavbar>} />
