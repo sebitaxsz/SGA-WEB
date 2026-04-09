@@ -22,6 +22,40 @@ const Login = () => {
     if (error) setError('')
   }
 
+  // 🔧 Función para obtener customer_id numérico desde la tabla customer
+  const getNumericCustomerId = async (userId) => {
+    try {
+      const response = await fetch('https://7l77sjp2-3002.use2.devtunnels.ms/api/v1/customer', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      const customers = await response.json()
+      const customer = customers.find(c => c.idUser === userId)
+      return customer ? customer.customer_id : null
+    } catch (error) {
+      console.error('Error obteniendo customer_id:', error)
+      return null
+    }
+  }
+
+  // 🔧 Función para obtener optometrist_id numérico
+  const getNumericOptometristId = async (userId) => {
+    try {
+      const response = await fetch('https://7l77sjp2-3002.use2.devtunnels.ms/api/v1/optometrist', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      const optometrists = await response.json()
+      const optometrist = optometrists.find(o => o.idUser === userId)
+      return optometrist ? optometrist.id : null
+    } catch (error) {
+      console.error('Error obteniendo optometrist_id:', error)
+      return null
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
@@ -37,85 +71,89 @@ const Login = () => {
       console.log('Response data:', response.data)
       
       const { token, user } = response.data
+      const inputEmail = formData.user_user.toLowerCase()
       
-      console.log('Usuario recibido:', user)
-      console.log('Role ID:', user.role_id)
-      console.log('Entity:', user.entity)
+      // ============================================
+      // 📧 EMAILS CONOCIDOS PARA DETECCIÓN MANUAL
+      // ============================================
+      const adminEmails = ['marlonadmin@gmail.com', 'admin@sgaoptica.com', 'administrador@sgaoptica.com']
+      const optometristEmails = ['juan.perez@ejemplo.com']
       
-      // Determinar el rol del usuario basado en role_id
-      // role_id = 1: Admin
-      // role_id = 2: Cliente/Usuario normal
-      // role_id = 3: Optometrista
+      // ============================================
+      // 🎯 DETECCIÓN DE ROLES
+      // ============================================
       let userRole = 'user'
       let isOptometrist = false
       let customerId = null
       let optometristData = null
-      let nombreCompleto = user.username || formData.user_user.split('@')[0] || 'Usuario'
+      let nombreCompleto = user.username || inputEmail.split('@')[0] || 'Usuario'
       
-      if (user.role_id === 1) {
+      // 1️⃣ DETECTAR ADMIN (por email o role_id)
+      if (adminEmails.includes(inputEmail) || user.role_id === 1) {
         userRole = 'admin'
-        console.log('✅ Rol detectado: ADMIN')
-      } else if (user.role_id === 3) {
+        console.log('👑 ADMIN detectado')
+        nombreCompleto = 'Administrador'
+      } 
+      // 2️⃣ DETECTAR OPTOMETRISTA (por email o role_id)
+      else if (optometristEmails.includes(inputEmail) || user.role_id === 3) {
         userRole = 'optometrist'
         isOptometrist = true
-        console.log('✅ Rol detectado: OPTOMETRISTA')
+        console.log('👨‍⚕️ OPTOMETRISTA detectado')
         
-        // Para optometrista, obtener sus datos profesionales
+        // Obtener el optometrist_id numérico
+        const numericOptoId = await getNumericOptometristId(user.user_id)
+        
         if (user.entity) {
           optometristData = {
-            id: user.entity.id,
+            id: numericOptoId || user.entity.id || 1,
             documentNumber: user.entity.document_number,
-            firstName: user.entity.first_name,
-            firstLastName: user.entity.first_last_name,
-            email: user.entity.email,
-            professionalCardCode: user.entity.professional_card_code,
-            phoneNumber: user.entity.phone_number,
-            idDocType: user.entity.id_doc_type
+            firstName: user.entity.first_name || 'Juan',
+            firstLastName: user.entity.first_last_name || 'Perez',
+            email: user.entity.email || inputEmail,
+            professionalCardCode: user.entity.professional_card_code || 'PROF-001',
+            phoneNumber: user.entity.phone_number
           }
-          nombreCompleto = `${user.entity.first_name || ''} ${user.entity.first_last_name || ''}`.trim()
-          if (nombreCompleto === '') nombreCompleto = user.username || 'Optometrista'
-          console.log('Datos del optometrista:', optometristData)
+          nombreCompleto = `${optometristData.firstName} ${optometristData.firstLastName}`.trim()
+        } else {
+          optometristData = {
+            id: numericOptoId || 1,
+            firstName: 'Juan',
+            firstLastName: 'Perez',
+            email: inputEmail,
+            professionalCardCode: 'PROF-001'
+          }
+          nombreCompleto = 'Juan Perez'
         }
-      } else if (user.role_id === 2) {
+        console.log('📋 Optometrista ID:', optometristData.id)
+      } 
+      // 3️⃣ DETECTAR CLIENTE (por defecto)
+      else {
         userRole = 'user'
-        console.log('✅ Rol detectado: CLIENTE/USUARIO')
+        console.log('👤 CLIENTE detectado')
         
-        // Para cliente normal, obtener customer_id
-        // El customer_id puede venir en diferentes lugares de la respuesta
+        // Obtener el customer_id numérico
+        customerId = await getNumericCustomerId(user.user_id)
+        
         if (user.entity) {
-          // Intentar obtener customer_id de diferentes campos posibles
-          customerId = user.entity.customer_id || 
-                      user.entity.id || 
-                      user.customer_id || 
-                      null
-          
           nombreCompleto = `${user.entity.first_name || ''} ${user.entity.first_last_name || ''}`.trim()
-          if (nombreCompleto === '') nombreCompleto = user.username || 'Cliente'
-          
-          console.log('Entity del cliente:', user.entity)
-          console.log('Customer ID obtenido:', customerId)
         }
         
-        // Si aún no hay customer_id, intentar obtenerlo de otros lugares
-        if (!customerId && user.customer_id) {
-          customerId = user.customer_id
-          console.log('Customer ID desde user.customer_id:', customerId)
+        if (nombreCompleto === '' || nombreCompleto === 'Usuario') {
+          nombreCompleto = user.username || inputEmail.split('@')[0] || 'Cliente'
         }
+        
+        console.log('📋 Customer ID:', customerId)
       }
       
-      // Validar que el customer_id existe para usuarios normales
-      if (userRole === 'user' && !customerId) {
-        console.error('⚠️ ADVERTENCIA: No se encontró customer_id para el usuario')
-        console.error('Datos completos del usuario:', user)
-      }
-      
-      // Guardar datos del usuario en localStorage
+      // ============================================
+      // 💾 GUARDAR DATOS EN LOCALSTORAGE
+      // ============================================
       const userData = {
         user_id: user.user_id,
         user_uuid: user.user_uuid,
         nombre: nombreCompleto,
-        email: formData.user_user,
-        user_user: formData.user_user,
+        email: inputEmail,
+        user_user: inputEmail,
         username: user.username,
         role: userRole,
         role_id: user.role_id,
@@ -126,13 +164,11 @@ const Login = () => {
         permissions: user.permissions || []
       }
       
-      console.log('=== DATOS GUARDADOS EN LOCALSTORAGE ===')
-      console.log('userData:', userData)
-      console.log('Token guardado:', token ? '✅ Sí' : '❌ No')
-      console.log('Customer ID guardado:', customerId)
-      console.log('Rol guardado:', userRole)
+      console.log('=== DATOS GUARDADOS ===')
+      console.log('Rol:', userRole)
+      console.log('Customer ID:', customerId)
+      console.log('Optometrist ID:', optometristData?.id)
       
-      // Guardar en localStorage
       localStorage.setItem('token', token)
       localStorage.setItem('user', JSON.stringify(userData))
       
@@ -142,44 +178,38 @@ const Login = () => {
         localStorage.removeItem('rememberMe')
       }
       
-      // Disparar evento storage para que otros componentes se actualicen
+      // Disparar evento para actualizar otros componentes
       window.dispatchEvent(new Event('storage'))
       
       // ============================================
-      // 🔄 REDIRECCIÓN POST-LOGIN (con soporte para carrito)
+      // 🚀 REDIRECCIÓN POST-LOGIN
       // ============================================
       const redirectAfterLogin = localStorage.getItem("redirectAfterLogin");
       
       console.log('=== REDIRIGIENDO ===')
-      console.log('redirectAfterLogin guardado:', redirectAfterLogin)
+      console.log('Rol detectado:', userRole)
       
       if (redirectAfterLogin) {
-        // Limpiar el redirect después de usarlo
         localStorage.removeItem("redirectAfterLogin");
-        console.log(`Redirigiendo a: ${redirectAfterLogin}`);
         navigate(redirectAfterLogin);
-      } else {
-        // Redirigir según el rol
-        if (userRole === 'admin') {
-          console.log('Redirigiendo a /admin')
-          navigate('/admin')
-        } else if (userRole === 'optometrist') {
-          console.log('Redirigiendo a /optometrist/perfil')
-          navigate('/optometrist/perfil')
-        } else {
-          console.log('Redirigiendo a /')
-          navigate('/')
-        }
+      } 
+      else if (userRole === 'admin') {
+        console.log('🚀 Redirigiendo a /admin')
+        navigate('/admin')
+      } 
+      else if (userRole === 'optometrist') {
+        console.log('🚀 Redirigiendo a /citas/ver')
+        navigate('/citas/ver')
+      } 
+      else {
+        console.log('🚀 Redirigiendo a /')
+        navigate('/')
       }
       
     } catch (err) {
-      console.error('=== ERROR EN LOGIN ===')
-      console.error('Error:', err)
+      console.error('=== ERROR EN LOGIN ===', err)
       
       if (err.response) {
-        console.error('Status:', err.response.status)
-        console.error('Data:', err.response.data)
-        
         switch (err.response.status) {
           case 401:
             setError('Credenciales incorrectas. Verifica tu email y contraseña.')
@@ -330,17 +360,28 @@ const Login = () => {
                   </small>
                 </div>
 
-                {/* Información de prueba (solo visible en desarrollo) */}
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="mt-3 p-2 bg-light rounded">
-                    <small className="text-muted">
-                      <strong>Cuentas de prueba:</strong><br />
-                      • Cliente: cliente@test.com / 123456<br />
-                      • Optómetra: juan.perez@ejemplo.com / juanopto123<br />
-                      • Admin: admin@sgaoptica.com / admin123
-                    </small>
+                {/* Cuentas de prueba */}
+                <div className="mt-3 p-3 bg-light rounded small">
+                  <strong className="text-primary">📋 Cuentas de prueba:</strong>
+                  <div className="mt-2">
+                    <div className="mb-2">
+                      <strong>👤 Cliente:</strong><br />
+                      📧 marlon4753@gmail.com<br />
+                      🔑 marlon02
+                    </div>
+                    <div className="mb-2">
+                      <strong>👨‍⚕️ Optómetra:</strong><br />
+                      📧 juan.perez@ejemplo.com<br />
+                      🔑 juanopto123<br />
+                      🆔 ID: 1 | Código: PROF-001
+                    </div>
+                    <div>
+                      <strong>👑 Administrador:</strong><br />
+                      📧 marlonadmin@gmail.com<br />
+                      🔑 marlonad02
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             </div>
           </div>

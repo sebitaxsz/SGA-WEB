@@ -8,8 +8,9 @@ const Navbar = () => {
   const navigate = useNavigate()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userName, setUserName] = useState('')
-  const [userRole, setUserRole] = useState('')
+  const [userRole, setUserRole] = useState('') // 'user', 'optometrist', 'admin'
   const [userEmail, setUserEmail] = useState('')
+  const [optometristData, setOptometristData] = useState(null)
   const { cart } = useCart()
 
   useEffect(() => {
@@ -22,19 +23,39 @@ const Navbar = () => {
           const userData = JSON.parse(user)
           setIsLoggedIn(true)
           
+          // Obtener nombre del usuario
           const nombre = userData.nombre || userData.firstName || userData.username || 'Usuario'
           const email = userData.email || userData.user_user || userData.username || ''
           setUserName(nombre)
           setUserEmail(email)
           
-          let role = 'user'
-          const adminEmails = ['marlonadmin@gmail.com', 'admin@sgaoptica.com', 'administrador@sgaoptica.com']
+          // ============================================
+          // 🎯 DETECCIÓN DE ROL CORRECTA
+          // ============================================
+          let role = 'user' // default: cliente
           
-          if (adminEmails.includes(email) || 
-              userData.role === 'admin' || 
-              userData.role === 'administrador' || 
-              userData.role_id === 1) {
+          // 1. Verificar si es ADMIN (role_id = 1 o role = 'admin')
+          if (userData.role === 'admin' || 
+              userData.role_id === 1 ||
+              userData.role === 'administrador') {
             role = 'admin'
+            console.log('👑 Navbar detectó ADMIN')
+          }
+          // 2. Verificar si es OPTOMETRISTA (role_id = 3 o role = 'optometrist')
+          else if (userData.role === 'optometrist' || 
+                   userData.role_id === 3 ||
+                   userData.is_optometrist === true) {
+            role = 'optometrist'
+            console.log('👨‍⚕️ Navbar detectó OPTOMETRISTA')
+            // Guardar datos del optometrista si existen
+            if (userData.optometrist_data) {
+              setOptometristData(userData.optometrist_data)
+            }
+          }
+          // 3. Si no, es CLIENTE normal
+          else {
+            role = 'user'
+            console.log('👤 Navbar detectó CLIENTE')
           }
           
           setUserRole(role)
@@ -47,11 +68,13 @@ const Navbar = () => {
         setUserName('')
         setUserRole('')
         setUserEmail('')
+        setOptometristData(null)
       }
     }
     
     checkAuth()
     
+    // Escuchar cambios en localStorage (para cuando se cierra sesión desde otra pestaña)
     window.addEventListener('storage', checkAuth)
     return () => window.removeEventListener('storage', checkAuth)
   }, [])
@@ -64,7 +87,32 @@ const Navbar = () => {
     setUserName('')
     setUserRole('')
     setUserEmail('')
+    setOptometristData(null)
     navigate('/')
+  }
+
+  // Obtener badge según el rol
+  const getRoleBadge = () => {
+    switch(userRole) {
+      case 'admin':
+        return <span className="badge bg-danger ms-2">Admin</span>
+      case 'optometrist':
+        return <span className="badge bg-info ms-2">Optómetra</span>
+      default:
+        return null
+    }
+  }
+
+  // Obtener ícono según el rol
+  const getRoleIcon = () => {
+    switch(userRole) {
+      case 'admin':
+        return <i className="fas fa-crown me-1"></i>
+      case 'optometrist':
+        return <i className="fas fa-stethoscope me-1"></i>
+      default:
+        return <i className="fas fa-user me-1"></i>
+    }
   }
 
   const menuItems = {
@@ -100,28 +148,37 @@ const Navbar = () => {
           
           <div className="collapse navbar-collapse" id="navbarContent">
             <ul className="navbar-nav mx-auto mb-2 mb-lg-0">
-              {/* PRODUCTOS - Ahora es un enlace directo */}
+              {/* PRODUCTOS - Enlace directo */}
               <li className="nav-item">
                 <Link className="nav-link text-dark fs-5 fw-semibold px-3" to="/productos">
                   PRODUCTOS
                 </Link>
               </li>
               
-              <li className="nav-item dropdown">
-                <Link className="nav-link dropdown-toggle text-dark fs-5 fw-semibold px-3" to="#" role="button" data-bs-toggle="dropdown">
-                  AGENDA TU CITA
-                </Link>
-                <ul className="dropdown-menu">
-                  {menuItems.agenda.map(item => (
-                    <li key={item.id}>
-                      <Link className="dropdown-item" to={item.path}>
-                        <i className={`fas ${item.icon} me-2 text-primary`}></i>
-                        {item.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </li>
+              {/* Solo mostrar opciones de agenda/citas para usuarios no-optometristas? 
+                  Los optometristas también pueden ver citas, pero no crear nuevas */}
+            <li className="nav-item dropdown">
+  <Link className="nav-link dropdown-toggle text-dark fs-5 fw-semibold px-3" to="#" role="button" data-bs-toggle="dropdown">
+    AGENDA TU CITA
+  </Link>
+  <ul className="dropdown-menu">
+    {/* Los optometristas NO pueden crear citas, solo verlas */}
+    {userRole !== 'optometrist' && (
+      <li>
+        <Link className="dropdown-item" to="/citas/nueva">
+          <i className="fas fa-calendar-plus me-2 text-primary"></i>
+          Nueva Cita
+        </Link>
+      </li>
+    )}
+    <li>
+      <Link className="dropdown-item" to="/citas/ver">
+        <i className="fas fa-calendar-alt me-2 text-primary"></i>
+        {userRole === 'optometrist' ? 'Gestionar Citas' : 'Mis Citas'}
+      </Link>
+    </li>
+  </ul>
+</li>
               
               <li className="nav-item dropdown">
                 <Link className="nav-link dropdown-toggle text-dark fs-5 fw-semibold px-3" to="#" role="button" data-bs-toggle="dropdown">
@@ -141,15 +198,17 @@ const Navbar = () => {
             </ul>
             
             <div className="d-flex align-items-center">
+              {/* Botón de Admin Panel - SOLO para administradores */}
               {isLoggedIn && userRole === 'admin' && (
                 <Link to="/admin" className="btn btn-outline-danger me-2">
                   <i className="fas fa-cog me-1"></i> Panel Admin
                 </Link>
               )}
-              
+            
               {isLoggedIn ? (
                 <>
-                  <NotificationBell />
+                  {/* Campanita de notificaciones - SOLO para clientes (tienen customer_id) */}
+                  {userRole === 'user' && <NotificationBell />}
                   
                   <div className="dropdown me-2">
                     <button 
@@ -157,16 +216,28 @@ const Navbar = () => {
                       type="button"
                       data-bs-toggle="dropdown"
                     >
-                      <i className="fas fa-user me-1"></i> {userName}
-                      {userRole === 'admin' && (
-                        <span className="badge bg-danger ms-2">Admin</span>
-                      )}
+                      {getRoleIcon()} {userName}
+                      {getRoleBadge()}
                     </button>
                     <ul className="dropdown-menu dropdown-menu-end">
                       <li><Link className="dropdown-item" to="/profile">Mi Perfil</Link></li>
-                      <li><Link className="dropdown-item" to="/citas/ver">Mis Citas</Link></li>
-                      <li><Link className="dropdown-item" to="/mis-notificaciones">Notificaciones</Link></li>
-                      <li><Link className="dropdown-item" to="/pedidos">Mis Pedidos</Link></li>
+                      
+                      {/* Opciones según el rol */}
+                      {userRole === 'user' && (
+                        <>
+                          <li><Link className="dropdown-item" to="/citas/ver">Mis Citas</Link></li>
+                          <li><Link className="dropdown-item" to="/mis-notificaciones">Notificaciones</Link></li>
+                          <li><Link className="dropdown-item" to="/pedidos">Mis Pedidos</Link></li>
+                        </>
+                      )}
+                      
+                      {userRole === 'optometrist' && (
+                        <>
+                          <li><Link className="dropdown-item" to="/citas/ver">Citas Agendadas</Link></li>
+                          <li><Link className="dropdown-item" to="/optometrist/perfil">Mi Perfil Profesional</Link></li>
+                          <li><Link className="dropdown-item" to="/optometrist/horarios">Mis Horarios</Link></li>
+                        </>
+                      )}
                       
                       {userRole === 'admin' && (
                         <>
@@ -194,12 +265,15 @@ const Navbar = () => {
                 </Link>
               )}
               
-              <Link to="/carrito" className="btn btn-primary position-relative">
-                <i className="fas fa-shopping-cart me-1"></i> Carrito
-                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                  {cart.length}
-                </span>
-              </Link>
+              {/* Carrito - SOLO para clientes */}
+              {userRole === 'user' && (
+                <Link to="/carrito" className="btn btn-primary position-relative">
+                  <i className="fas fa-shopping-cart me-1"></i> Carrito
+                  <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    {cart.length}
+                  </span>
+                </Link>
+              )}
             </div>
           </div>
         </div>

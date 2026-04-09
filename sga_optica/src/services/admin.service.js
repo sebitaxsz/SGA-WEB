@@ -33,10 +33,10 @@ export const deleteCategory  = (id)       => axiosInstance.delete(`${BASE}/categ
 
 // ── OPTÓMETRAS ────────────────────────────────────────────────────────────────
 export const getOptometrists   = ()         => axiosInstance.get(`${BASE}/optometrist`);
+export const getOptometristById = (id)      => axiosInstance.get(`${BASE}/optometrist/${id}`);
 export const createOptometrist = (data)     => axiosInstance.post(`${BASE}/optometrist`, data);
 export const updateOptometrist = (id, data) => axiosInstance.put(`${BASE}/optometrist/${id}`, data);
 export const deleteOptometrist = (id)       => axiosInstance.delete(`${BASE}/optometrist/${id}`);
-
 // ── ROLES ─────────────────────────────────────────────────────────────────────
 export const getRoles    = ()         => axiosInstance.get(`${BASE}/roles`);
 export const createRole  = (data)     => axiosInstance.post(`${BASE}/roles`, data);
