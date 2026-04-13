@@ -182,28 +182,34 @@ const AllProductsPage = () => {
               {currentProducts.map(producto => (
                 <div key={producto.id} className="col-md-3 mb-4">
                   <div className="card h-100">
-                    {producto.imagen ? (
-                      <img
-                        src={producto.imagen}
-                        alt={producto.nombre}
-                        className="card-img-top"
-                        style={{ height: "180px", objectFit: "cover" }}
-                        onError={(e) => {
-                          e.target.src = 'https://via.placeholder.com/300x180?text=Sin+Imagen'
-                        }}
-                      />
-                    ) : (
-                      <div 
-                        className="card-img-top bg-light d-flex align-items-center justify-content-center"
-                        style={{ height: "180px" }}
-                      >
-                        <i className="fas fa-image fa-3x text-muted"></i>
-                      </div>
-                    )}
+                    {/* Enlace en la imagen */}
+                    <Link to={`/producto/${producto.id}`}>
+                      {producto.imagen ? (
+                        <img
+                          src={producto.imagen}
+                          alt={producto.nombre}
+                          className="card-img-top"
+                          style={{ height: "180px", objectFit: "cover", cursor: "pointer" }}
+                          onError={(e) => {
+                            e.target.src = 'https://via.placeholder.com/300x180?text=Sin+Imagen'
+                          }}
+                        />
+                      ) : (
+                        <div 
+                          className="card-img-top bg-light d-flex align-items-center justify-content-center"
+                          style={{ height: "180px", cursor: "pointer" }}
+                        >
+                          <i className="fas fa-image fa-3x text-muted"></i>
+                        </div>
+                      )}
+                    </Link>
                     <div className="card-body">
-                      <h5 className="card-title" style={{ fontSize: "1rem", minHeight: "48px" }}>
-                        {producto.nombre}
-                      </h5>
+                      {/* Enlace en el título */}
+                      <Link to={`/producto/${producto.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                        <h5 className="card-title" style={{ fontSize: "1rem", minHeight: "48px", cursor: "pointer" }}>
+                          {producto.nombre}
+                        </h5>
+                      </Link>
                       <p className="card-text small text-muted">{producto.categoryName}</p>
                       <p className="fw-bold text-primary fs-5 mb-2">{producto.precio}</p>
                       <p className="text-muted small mb-3">Stock: {producto.stock} unidades</p>

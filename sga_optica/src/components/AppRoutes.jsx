@@ -28,6 +28,7 @@ import ResetPassword from './registro/ResetPassword'
 
 // Importar componente de carrito
 import CartPage from './carrito/CartPage'
+import ProductDetail from './ProductDetail'; // productos en detalle
 
 // Importar componente de notificación
 import MisNotificaciones from './campanita/MisNotificaciones'
@@ -48,8 +49,12 @@ function AppRouter() {
       <Routes>
         {/* Rutas CON Navbar */}
         <Route path="/" element={<LayoutWithNavbar><App /></LayoutWithNavbar>} />
+        
+        {/* Rutas de productos - MODIFICACIÓN: agregada ruta específica para "todos" */}
+        <Route path="/productos/todos" element={<LayoutWithNavbar><AllProductsPage /></LayoutWithNavbar>} />
         <Route path="/productos" element={<LayoutWithNavbar><AllProductsPage /></LayoutWithNavbar>} />
         <Route path="/productos/:category" element={<LayoutWithNavbar><ProductosPage /></LayoutWithNavbar>} />
+        <Route path="/producto/:id" element={<LayoutWithNavbar><ProductDetail /></LayoutWithNavbar>} />
 
         {/* Rutas de citas */}
         <Route path="/citas/nueva" element={<LayoutWithNavbar><NuevaCita /></LayoutWithNavbar>} />
