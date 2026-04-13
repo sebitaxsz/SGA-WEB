@@ -1,23 +1,28 @@
 import axiosInstance from './axiosConfig';
 
 export const notificationService = {
+  // Obtener notificaciones de un cliente
   getNotifications: (customerId, params) => 
     axiosInstance.get(`/notification/customer/${customerId}`, { params }),
+  
+  // Obtener todas las notificaciones (admin)
   getAllNotifications: (params) => axiosInstance.get('/notification', { params }),
-  markAsRead: (notificationId) => axiosInstance.put(`/notification/${notificationId}/read`),
-  markAsSent: (notificationId) => axiosInstance.put(`/notification/${notificationId}/sent`),
-  createReminder: (data) => axiosInstance.post('/notification/reminder', data),
-  sendDailyReminders: () => axiosInstance.post('/notification/send-daily-reminders'),
   
-  // Nuevo: Enviar recordatorio de cita
-  sendAppointmentReminder: (appointmentData) => 
-    axiosInstance.post('/notifications/appointment-reminder', appointmentData),
+  // Marcar como leída
+  markAsRead: (notificationId) => axiosInstance.patch(`/notification/${notificationId}/read`),
   
-  // Nuevo: Enviar recordatorio de cita creada
-  sendAppointmentCreated: (appointmentData) => 
-    axiosInstance.post('/notifications/appointment-created', appointmentData),
+  // Marcar como enviada
+  markAsSent: (notificationId) => axiosInstance.patch(`/notification/${notificationId}/sent`),
   
-  // Nuevo: Enviar recordatorio de cancelación
-  sendAppointmentCancelled: (appointmentData) => 
-    axiosInstance.post('/notifications/appointment-cancelled', appointmentData)
+  // Crear notificación manual
+  createNotification: (data) => axiosInstance.post('/notification', data),
+  
+  // Actualizar notificación
+  updateNotification: (id, data) => axiosInstance.put(`/notification/${id}`, data),
+  
+  // Eliminar notificación (soft delete)
+  deleteNotification: (id) => axiosInstance.delete(`/notification/${id}`),
+  
+  // Eliminar permanentemente
+  permanentDeleteNotification: (id) => axiosInstance.delete(`/notification/${id}/permanent`),
 };

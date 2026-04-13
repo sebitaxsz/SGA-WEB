@@ -1,3 +1,4 @@
+// src/components/Clinica/Examenes.jsx
 import React from 'react'
 import { Link } from 'react-router-dom'
 
@@ -6,81 +7,49 @@ const Examenes = () => {
     {
       id: 1,
       nombre: 'Examen de Agudeza Visual',
-      descripcion: 'Mide la capacidad para ver detalles a diferentes distancias',
-      preparacion: 'Sin preparación especial',
-      tiempo: '15 min'
+      descripcion: 'Evaluación básica de la visión para determinar la capacidad de ver detalles finos y nítidos.',
+      duracion: '15-20 minutos',
+      icono: 'fa-eye'
     },
     {
       id: 2,
       nombre: 'Examen de Refracción',
-      descripcion: 'Determina la graduación exacta para lentes correctivos',
-      preparacion: 'Traer lentes actuales si los usa',
-      tiempo: '20 min'
+      descripcion: 'Medición de la graduación necesaria para corregir miopía, hipermetropía y astigmatismo.',
+      duracion: '20-30 minutos',
+      icono: 'fa-chart-line'
     },
     {
       id: 3,
-      nombre: 'Examen de Presión Intraocular',
-      descripcion: 'Mide la presión del ojo para detectar glaucoma',
-      preparacion: 'No usar lentes de contacto el día del examen',
-      tiempo: '10 min'
-    },
-    {
-      id: 4,
-      nombre: 'Examen de Fondo de Ojo',
-      descripcion: 'Evalúa la retina y el nervio óptico',
-      preparacion: 'Se aplicarán gotas para dilatar la pupila',
-      tiempo: '30 min'
-    },
-    {
-      id: 5,
-      nombre: 'Campo Visual Computarizado',
-      descripcion: 'Evalúa la visión periférica',
-      preparacion: 'Sin preparación especial',
-      tiempo: '20 min'
-    },
-    {
-      id: 6,
-      nombre: 'Paquete Examen Completo',
-      descripcion: 'Incluye todos los exámenes básicos + consulta especializada',
-      preparacion: 'No usar lentes de contacto',
-      tiempo: '90 min'
+      nombre: 'Tonometría',
+      descripcion: 'Medición de la presión intraocular para detectar riesgo de glaucoma.',
+      duracion: '5-10 minutos',
+      icono: 'fa-tachometer-alt'
     }
   ]
 
   return (
     <div className="container py-5" style={{ marginTop: '100px' }}>
-      <h1 className="text-primary mb-4">🔬 Exámenes de la Vista</h1>
-      
-      <div className="alert alert-info">
-        <h5>📋 Información Importante</h5>
-        <p className="mb-0">
-          Recomendamos realizar exámenes visuales anuales para mantener una 
-          salud ocular óptima. Los exámenes son indoloros y realizados con 
-          tecnología de última generación.
+      <div className="text-center mb-5">
+        <h1 className="display-4 fw-bold text-primary mb-3">Exámenes de la Vista</h1>
+        <p className="lead text-muted">
+          Realizamos exámenes completos con tecnología de punta y profesionales calificados
         </p>
       </div>
 
-      <div className="row g-4 mt-4">
+      <div className="row g-4">
         {examenes.map(examen => (
-          <div key={examen.id} className="col-md-6 col-lg-4">
-            <div className="card h-100 shadow-sm">
-              <div className="card-body">
-                <h5 className="card-title">{examen.nombre}</h5>
-                <p className="card-text">{examen.descripcion}</p>
-                
-                <div className="mt-3">
-                  <p className="mb-1">
-                    <strong>⏱️ Duración:</strong> {examen.tiempo}
-                  </p>
-                  <p className="mb-0">
-                    <strong>📝 Preparación:</strong> {examen.preparacion}
-                  </p>
+          <div key={examen.id} className="col-md-4">
+            <div className="card h-100 border-0 shadow-sm hover-card">
+              <div className="card-body text-center p-4">
+                <div className="display-1 text-primary mb-3">
+                  <i className={`fas ${examen.icono}`}></i>
                 </div>
-                
-                <div className="d-grid mt-3">
-                  <Link to="/citas/nueva" className="btn btn-outline-primary">
-                    Agendar Examen
-                  </Link>
+                <h3 className="card-title fw-bold mb-3">{examen.nombre}</h3>
+                <p className="card-text text-muted mb-3">{examen.descripcion}</p>
+                <div className="mt-3">
+                  <span className="badge bg-primary me-2">
+                    <i className="fas fa-clock me-1"></i> {examen.duracion}
+                  </span>
                 </div>
               </div>
             </div>
@@ -88,35 +57,17 @@ const Examenes = () => {
         ))}
       </div>
 
-      <div className="row mt-5">
-        <div className="col-md-6">
-          <div className="card">
-            <div className="card-body">
-              <h5>🕒 Horarios para Exámenes</h5>
-              <ul className="mb-0">
-                <li>Lunes a Viernes: 8:00 AM - 6:00 PM</li>
-                <li>Sábados: 9:00 AM - 2:00 PM</li>
-                <li>Domingos: Cerrado</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-6">
-          <div className="card">
-            <div className="card-body">
-              <h5>📞 Para Mayores de 60 años</h5>
-              <p className="mb-0">
-                Ofrecemos descuentos especiales en paquetes de exámenes 
-                para adultos mayores. Consulta por nuestras promociones.
-              </p>
-            </div>
-          </div>
-        </div>
+      <div className="text-center mt-5">
+        <Link to="/citas/nueva" className="btn btn-primary btn-lg">
+          <i className="fas fa-calendar-check me-2"></i>
+          Agendar mi Examen
+        </Link>
       </div>
 
       <div className="mt-4">
         <Link to="/" className="btn btn-outline-secondary">
-          ← Volver al Inicio
+          <i className="fas fa-arrow-left me-2"></i>
+          Volver al Inicio
         </Link>
       </div>
     </div>

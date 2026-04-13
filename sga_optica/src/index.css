@@ -1,4 +1,3 @@
-/* Reset y estilos base */
 * {
   margin: 0;
   padding: 0;
@@ -11,11 +10,10 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  padding-top: 140px; /* Para navbar fijo */
+  padding-top: 140px;
   background-color: #f8f9fa;
 }
 
-/* Ajustes Bootstrap personalizados */
 :root {
   --bs-primary: #1a5fb4;
   --bs-primary-rgb: 26, 95, 180;
@@ -31,7 +29,6 @@ body {
   border-color: #154c8c;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   body {
     padding-top: 180px;

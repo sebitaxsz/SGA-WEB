@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { reportService } from '../../services/report.service';
 import { userService } from '../../services/user.service';
+import { appointmentService } from '../../services/appointment.service';
+import { notificationService } from '../../services/notification.service';
 import { FileText, TrendingUp, Download, Calendar, Users } from 'lucide-react';
 
 const Reportes = () => {
@@ -28,6 +30,7 @@ const Reportes = () => {
     }
   };
 
+  // Reporte de notificaciones
   const generateNotificationsReport = async () => {
     setLoading(true);
     setError(null);
@@ -42,12 +45,43 @@ const Reportes = () => {
     }
   };
 
+  // Reporte de citas
   const generateAppointmentsReport = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await reportService.getAppointmentsReport(dateRange.startDate, dateRange.endDate);
-      setReportData(response.data);
+      const response = await appointmentService.getAllAppointments();
+      let appointments = response.data?.data || response.data || [];
+      
+      const startDate = new Date(dateRange.startDate);
+      const endDate = new Date(dateRange.endDate);
+      endDate.setHours(23, 59, 59);
+      
+      const filteredAppointments = appointments.filter(apt => {
+        const aptDate = new Date(apt.date);
+        return aptDate >= startDate && aptDate <= endDate;
+      });
+      
+      const total = filteredAppointments.length;
+      const pending = filteredAppointments.filter(a => a.status === 'PENDING' || a.status === 'pendiente').length;
+      const confirmed = filteredAppointments.filter(a => a.status === 'CONFIRMED' || a.status === 'confirmada').length;
+      const completed = filteredAppointments.filter(a => a.status === 'COMPLETED' || a.status === 'completada').length;
+      const cancelled = filteredAppointments.filter(a => a.status === 'CANCELLED' || a.status === 'cancelada').length;
+      
+      setReportData({
+        detalles: filteredAppointments,
+        resumen: {
+          total,
+          pendientes: pending,
+          confirmadas: confirmed,
+          completadas: completed,
+          canceladas: cancelled
+        },
+        rango: {
+          inicio: dateRange.startDate,
+          fin: dateRange.endDate
+        }
+      });
     } catch (err) {
       setError(err.response?.data?.message || 'Error al generar el reporte de citas');
       console.error('Error:', err);
@@ -56,12 +90,37 @@ const Reportes = () => {
     }
   };
 
+  // Reporte de recordatorios
   const generateRemindersReport = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await reportService.getRemindersHistory(selectedCustomer || undefined, 100);
-      setReportData(response.data);
+      let response;
+      if (selectedCustomer) {
+        response = await notificationService.getNotifications(selectedCustomer, { limit: 100 });
+      } else {
+        response = await notificationService.getAllNotifications({ limit: 100 });
+      }
+      
+      let reminders = response.data?.data || response.data || [];
+      
+      const startDate = new Date(dateRange.startDate);
+      const endDate = new Date(dateRange.endDate);
+      endDate.setHours(23, 59, 59);
+      
+      const filteredReminders = reminders.filter(rem => {
+        const remDate = new Date(rem.sent_at || rem.createdAt);
+        return remDate >= startDate && remDate <= endDate;
+      });
+      
+      setReportData({
+        recordatorios: filteredReminders,
+        total: filteredReminders.length,
+        rango: {
+          inicio: dateRange.startDate,
+          fin: dateRange.endDate
+        }
+      });
     } catch (err) {
       setError(err.response?.data?.message || 'Error al generar el reporte de recordatorios');
       console.error('Error:', err);
@@ -93,19 +152,20 @@ const Reportes = () => {
         `${n.Customer?.firstName || ''} ${n.Customer?.firstLastName || ''}`,
         n.type,
         n.subject,
-        n.message,
+        n.message?.replace(/,/g, ' '),
         n.status,
         new Date(n.sent_at).toLocaleString()
       ]);
     } else if (reportType === 'appointments' && reportData.detalles) {
-      headers = ['ID', 'Cliente', 'Fecha', 'Hora', 'Estado', 'Fecha Creación'];
+      headers = ['ID', 'Cliente', 'Fecha', 'Hora', 'Estado', 'Teléfono', 'Examen'];
       csvData = reportData.detalles.map(a => [
         a.appointment_id,
         `${a.Customer?.firstName || ''} ${a.Customer?.firstLastName || ''}`,
         a.date,
         a.time,
         a.status,
-        new Date(a.createdAt).toLocaleString()
+        a.Customer?.phoneNumber || '',
+        a.ExamType?.name || ''
       ]);
     } else if (reportType === 'reminders' && reportData.recordatorios) {
       headers = ['ID', 'Cliente', 'Tipo', 'Mensaje', 'Estado', 'Fecha Envío', 'Cita'];
@@ -113,9 +173,9 @@ const Reportes = () => {
         r.notification_id,
         `${r.Customer?.firstName || ''} ${r.Customer?.firstLastName || ''}`,
         r.type,
-        r.message,
+        r.message?.replace(/,/g, ' '),
         r.status,
-        new Date(r.sent_at).toLocaleString(),
+        new Date(r.sent_at || r.createdAt).toLocaleString(),
         r.Appointment ? `${r.Appointment.date} ${r.Appointment.time}` : ''
       ]);
     }
@@ -124,7 +184,7 @@ const Reportes = () => {
 
     const csvContent = [
       headers.join(','),
-      ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
+      ...csvData.map(row => row.map(cell => `"${cell || ''}"`).join(','))
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -136,6 +196,24 @@ const Reportes = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const getStatusBadge = (status) => {
+    const s = status?.toLowerCase();
+    if (s === 'pending' || s === 'pendiente') return 'warning';
+    if (s === 'confirmed' || s === 'confirmada') return 'success';
+    if (s === 'completed' || s === 'completada') return 'info';
+    if (s === 'cancelled' || s === 'cancelada') return 'danger';
+    return 'secondary';
+  };
+
+  const getStatusText = (status) => {
+    const s = status?.toLowerCase();
+    if (s === 'pending' || s === 'pendiente') return 'Pendiente';
+    if (s === 'confirmed' || s === 'confirmada') return 'Confirmada';
+    if (s === 'completed' || s === 'completada') return 'Completada';
+    if (s === 'cancelled' || s === 'cancelada') return 'Cancelada';
+    return status || 'Desconocido';
   };
 
   return (
@@ -253,6 +331,51 @@ const Reportes = () => {
                 </div>
               </div>
             </div>
+
+            {/* Estadísticas específicas para citas */}
+            {reportType === 'appointments' && reportData.resumen && (
+              <>
+                <div className="col-md-3">
+                  <div className="card">
+                    <div className="card-body d-flex align-items-center gap-3">
+                      <div className="bg-warning rounded p-3 text-white">
+                        <Calendar size={20} />
+                      </div>
+                      <div>
+                        <h3 className="mb-0">{reportData.resumen.pendientes || 0}</h3>
+                        <small className="text-muted">Pendientes</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="card">
+                    <div className="card-body d-flex align-items-center gap-3">
+                      <div className="bg-success rounded p-3 text-white">
+                        <TrendingUp size={20} />
+                      </div>
+                      <div>
+                        <h3 className="mb-0">{reportData.resumen.confirmadas || 0}</h3>
+                        <small className="text-muted">Confirmadas</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="card">
+                    <div className="card-body d-flex align-items-center gap-3">
+                      <div className="bg-info rounded p-3 text-white">
+                        <Users size={20} />
+                      </div>
+                      <div>
+                        <h3 className="mb-0">{reportData.resumen.completadas || 0}</h3>
+                        <small className="text-muted">Completadas</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Tabla */}
@@ -271,17 +394,35 @@ const Reportes = () => {
                     <tr>
                       {reportType === 'notifications' && (
                         <>
-                          <th>ID</th><th>Cliente</th><th>Tipo</th><th>Asunto</th><th>Mensaje</th><th>Estado</th><th>Fecha</th>
+                          <th>ID</th>
+                          <th>Cliente</th>
+                          <th>Tipo</th>
+                          <th>Asunto</th>
+                          <th>Mensaje</th>
+                          <th>Estado</th>
+                          <th>Fecha</th>
                         </>
                       )}
                       {reportType === 'appointments' && (
                         <>
-                          <th>ID</th><th>Cliente</th><th>Fecha</th><th>Hora</th><th>Estado</th><th>Fecha Creación</th>
+                          <th>ID</th>
+                          <th>Cliente</th>
+                          <th>Teléfono</th>
+                          <th>Fecha</th>
+                          <th>Hora</th>
+                          <th>Examen</th>
+                          <th>Estado</th>
                         </>
                       )}
                       {reportType === 'reminders' && (
                         <>
-                          <th>ID</th><th>Cliente</th><th>Tipo</th><th>Mensaje</th><th>Estado</th><th>Fecha</th><th>Cita</th>
+                          <th>ID</th>
+                          <th>Cliente</th>
+                          <th>Tipo</th>
+                          <th>Mensaje</th>
+                          <th>Estado</th>
+                          <th>Fecha</th>
+                          <th>Cita</th>
                         </>
                       )}
                     </tr>
@@ -302,20 +443,23 @@ const Reportes = () => {
                         <td>{new Date(notif.sent_at).toLocaleString()}</td>
                       </tr>
                     ))}
+                    
                     {reportType === 'appointments' && reportData.detalles?.map(apt => (
                       <tr key={apt.appointment_id}>
                         <td>{apt.appointment_id}</td>
                         <td>{apt.Customer?.firstName} {apt.Customer?.firstLastName}</td>
+                        <td>{apt.Customer?.phoneNumber || '—'}</td>
                         <td>{apt.date}</td>
                         <td>{apt.time}</td>
+                        <td>{apt.ExamType?.name || '—'}</td>
                         <td>
-                          <span className={`badge bg-${apt.status === 'completada' ? 'success' : apt.status === 'pendiente' ? 'warning' : 'danger'}`}>
-                            {apt.status}
+                          <span className={`badge bg-${getStatusBadge(apt.status)}`}>
+                            {getStatusText(apt.status)}
                           </span>
                         </td>
-                        <td>{new Date(apt.createdAt).toLocaleString()}</td>
                       </tr>
                     ))}
+                    
                     {reportType === 'reminders' && reportData.recordatorios?.map(rem => (
                       <tr key={rem.notification_id}>
                         <td>{rem.notification_id}</td>
@@ -327,10 +471,31 @@ const Reportes = () => {
                             {rem.status}
                           </span>
                         </td>
-                        <td>{new Date(rem.sent_at).toLocaleString()}</td>
+                        <td>{new Date(rem.sent_at || rem.createdAt).toLocaleString()}</td>
                         <td>{rem.Appointment?.date} {rem.Appointment?.time}</td>
                       </tr>
                     ))}
+                    
+                    {/* Mensaje cuando no hay datos en appointments */}
+                    {reportType === 'appointments' && (!reportData.detalles || reportData.detalles.length === 0) && (
+                      <tr>
+                        <td colSpan="7" className="text-center">No hay citas en el rango de fechas seleccionado</td>
+                      </tr>
+                    )}
+                    
+                    {/* Mensaje cuando no hay datos en notifications */}
+                    {reportType === 'notifications' && (!reportData.notificaciones || reportData.notificaciones.length === 0) && (
+                      <tr>
+                        <td colSpan="7" className="text-center">No hay notificaciones en el rango de fechas seleccionado</td>
+                      </tr>
+                    )}
+                    
+                    {/* Mensaje cuando no hay datos en reminders */}
+                    {reportType === 'reminders' && (!reportData.recordatorios || reportData.recordatorios.length === 0) && (
+                      <tr>
+                        <td colSpan="7" className="text-center">No hay recordatorios en el rango de fechas seleccionado</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

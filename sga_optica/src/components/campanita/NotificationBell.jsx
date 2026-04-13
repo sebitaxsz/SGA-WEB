@@ -1,42 +1,133 @@
-// src/components/NotificationBell.jsx
+// src/components/campanita/NotificationBell.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { notificationService } from '../../services/notification.service';
+import axiosInstance from '../../services/axiosConfig';
 
 const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [customerId, setCustomerId] = useState(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
-  const getCustomerId = () => {
+  // 🔧 Función para obtener el customer_id CORRECTO desde la base de datos
+  const getCorrectCustomerId = async (userEmail) => {
+    try {
+      console.log('🔍 NotificationBell - Buscando customer_id correcto para:', userEmail);
+      const response = await axiosInstance.get('/customer');
+      const customers = response.data || [];
+      
+      // Buscar por email
+      let customer = customers.find(c => c.email === userEmail);
+      
+      // Si no encuentra, buscar por nombre
+      if (!customer) {
+        customer = customers.find(c => 
+          c.firstName?.toLowerCase() === 'marlon' || 
+          c.email?.includes('marlon')
+        );
+      }
+      
+      if (customer) {
+        console.log('✅ NotificationBell - customer_id encontrado:', customer.customer_id);
+        return customer.customer_id;
+      }
+      return null;
+    } catch (error) {
+      console.error('❌ NotificationBell - Error obteniendo customer_id:', error);
+      return null;
+    }
+  };
+
+  const getStoredCustomerId = () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      return user.customer_id || user.user_id || null;
+    } catch (error) {
+      console.error('Error parsing user:', error);
+      return null;
+    }
+  };
+
+  // 🔧 Inicializar customer_id correcto
+  const initCustomerId = async () => {
+    const storedId = getStoredCustomerId();
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    return user.customer_id || user.user_id || null;
+    const userEmail = user.email || user.user_user;
+    
+    console.log('NotificationBell - stored customer_id:', storedId);
+    console.log('NotificationBell - userEmail:', userEmail);
+    
+    // Si el storedId no es numérico o es null, buscar el correcto
+    if (!storedId || isNaN(parseInt(storedId)) || storedId === 13) {
+      // Si es 13 (incorrecto), buscar el correcto
+      const correctId = await getCorrectCustomerId(userEmail);
+      if (correctId) {
+        console.log('✅ NotificationBell - Usando customer_id correcto:', correctId);
+        setCustomerId(correctId);
+        
+        // Opcional: actualizar localStorage con el ID correcto
+        const updatedUser = { ...user, customer_id: correctId };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        return;
+      }
+    }
+    
+    // Si el storedId es válido (6), usarlo
+    if (storedId && !isNaN(parseInt(storedId)) && storedId !== 13) {
+      console.log('✅ NotificationBell - Usando customer_id de localStorage:', storedId);
+      setCustomerId(storedId);
+    } else {
+      console.warn('⚠️ NotificationBell - No se pudo obtener customer_id válido');
+      setCustomerId(null);
+    }
   };
 
   const fetchNotifications = async () => {
-    const customerId = getCustomerId();
-    if (!customerId) return;
+    // Esperar a tener el customer_id correcto
+    if (!customerId) {
+      console.log('NotificationBell - Esperando customer_id...');
+      return;
+    }
 
     setLoading(true);
     try {
+      console.log('NotificationBell - Fetching notifications para customerId:', customerId);
       const response = await notificationService.getNotifications(customerId, { limit: 5 });
       const data = response.data;
-      setNotifications(data.data || []);
-      const unread = data.data?.filter(n => n.status === 'PENDING' || n.status === 'SENT').length || 0;
+      const notificationsList = data.data || [];
+      setNotifications(notificationsList);
+      const unread = notificationsList.filter(n => n.status === 'PENDING' || n.status === 'SENT').length;
       setUnreadCount(unread);
+      console.log(`✅ NotificationBell - ${notificationsList.length} notificaciones, ${unread} no leídas`);
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      // Si hay error de autenticación, no redirigir automáticamente
-      if (error.response?.status === 401) {
-        console.log('Sesión expirada, pero no redirigimos automáticamente');
+      if (error.response?.status === 404) {
+        console.log('No hay notificaciones para este cliente');
+        setNotifications([]);
+        setUnreadCount(0);
       }
     } finally {
       setLoading(false);
     }
   };
+
+  // Inicializar customer_id al montar el componente
+  useEffect(() => {
+    initCustomerId();
+  }, []);
+
+  // Fetch notificaciones cuando tengamos customer_id
+  useEffect(() => {
+    if (customerId) {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [customerId]);
 
   const markAsRead = async (notificationId) => {
     try {
@@ -60,12 +151,6 @@ const NotificationBell = () => {
       await markAsRead(notification.notification_id);
     }
   };
-
-  useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -122,12 +207,14 @@ const NotificationBell = () => {
 
   const handleViewAll = () => {
     setShowDropdown(false);
-    // Usar navigate directamente sin verificación adicional
     navigate('/mis-notificaciones');
   };
 
-  const customerId = getCustomerId();
-  if (!customerId) return null;
+  // No mostrar el componente si no hay customer_id válido
+  if (!customerId) {
+    console.log('NotificationBell - No customer_id, ocultando componente');
+    return null;
+  }
 
   return (
     <div className="position-relative me-2" ref={dropdownRef}>

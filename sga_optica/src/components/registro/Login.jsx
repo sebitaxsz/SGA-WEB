@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authService } from '../../services/auth.service'
-import Navbar from '../Navbar'
 
 /*
   ═══════════════════════════════════════════════════════════
@@ -75,7 +74,6 @@ const Login = () => {
 
   return (
     <div className="container py-5" style={{ marginTop: '100px' }}>
-      <Navbar />
       <div className="row justify-content-center">
         <div className="col-md-6 col-lg-5">
           <div className="card shadow">
