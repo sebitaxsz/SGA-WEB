@@ -1,3 +1,4 @@
+// PanelAdmin.jsx - Con Fórmulas restauradas
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -16,9 +17,9 @@ import AdminCitas from './admin/AdminCitas'
 import AdminCatalogos from './admin/AdminCatalogos'
 import AdminVentas from './admin/AdminVentas'
 import AdminNotificaciones from './admin/AdminNotificaciones'
-import AdminFormulas from './admin/AdminFormulas'
+import AdminFormulas from './admin/AdminFormulas'  // ← Restaurado
 
-import { getNotifications, markNotifRead, getSales, getCustomers, getProducts, getAppointments } from '../services/admin.service'
+import { getSales, getCustomers, getProducts, getAppointments } from '../services/admin.service'
 import './Admin.css'
 import './admin/AdminPanel.css'
 
@@ -44,18 +45,25 @@ const NAV = [
   {
     section: 'Sistema',
     items: [
-      { id: 'notificaciones',  label: 'Notificaciones',   icon: Bell },
-      { id: 'formulas',        label: 'Fórmulas',         icon: FileSearch },
+      { id: 'notificaciones',  label: 'Notificaciones Admin', icon: Bell },
+      { id: 'formulas',        label: 'Fórmulas',         icon: FileSearch },  // ← Restaurado
       { id: 'catalogos',       label: 'Catálogos',        icon: Tag },
     ]
   }
 ]
 
 const SECTION_TITLES = {
-  dashboard:'Dashboard', reportes:'Reportes', usuarios:'Usuarios',
-  clientes:'Clientes', optometras:'Optómetras', productos:'Productos',
-  ventas:'Ventas', citas:'Citas', notificaciones:'Notificaciones',
-  formulas:'Fórmulas Ópticas', catalogos:'Catálogos',
+  dashboard:'Dashboard', 
+  reportes:'Reportes', 
+  usuarios:'Usuarios',
+  clientes:'Clientes', 
+  optometras:'Optómetras', 
+  productos:'Productos',
+  ventas:'Ventas', 
+  citas:'Citas', 
+  notificaciones:'Notificaciones Admin',
+  formulas:'Fórmulas Ópticas',  // ← Restaurado
+  catalogos:'Catálogos',
 }
 
 /* Dashboard con datos reales */
@@ -118,7 +126,9 @@ function Dashboard() {
           <div className="table-container">
             {recentSales.length === 0 ? <p className="empty-msg">Sin ventas registradas aún</p> : (
               <table className="data-table">
-                <thead><tr><th>N°</th><th>Total</th><th>Fecha</th></tr></thead>
+                <thead>
+                  <tr><th>N°</th><th>Total</th><th>Fecha</th></tr>
+                </thead>
                 <tbody>
                   {recentSales.map(s => (
                     <tr key={s.sale_id}>
@@ -165,12 +175,8 @@ const PanelAdmin = () => {
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
   const [userName, setUserName] = useState('')
-  const [notifications, setNotifications] = useState([])
-  const [showNotifications, setShowNotifications] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
-  // 🔧 Agregar clase al body para ocultar navbar (sin afectar la carga)
   useEffect(() => {
     document.body.classList.add('admin-active')
     return () => {
@@ -178,7 +184,6 @@ const PanelAdmin = () => {
     }
   }, [])
 
-  // 🔧 Autenticación - mantener igual
   useEffect(() => {
     const token = localStorage.getItem('token')
     const user = localStorage.getItem('user')
@@ -206,29 +211,6 @@ const PanelAdmin = () => {
     }
   }, [navigate])
 
-  const fetchNotifications = async () => {
-    try {
-      const res = await getNotifications()
-      const data = res.data?.data || res.data || []
-      setNotifications(data)
-      setUnreadCount(data.filter(n => n.status === 'PENDING' || n.status === 'SENT').length)
-    } catch (e) { console.error(e) }
-  }
-
-  useEffect(() => { 
-    if (isAdmin) {
-      fetchNotifications()
-    }
-  }, [isAdmin])
-
-  const handleMarkRead = async (id) => {
-    try {
-      await markNotifRead(id)
-      setNotifications(prev => prev.map(n => n.notification_id === id ? {...n, status:'READ'} : n))
-      setUnreadCount(prev => Math.max(0, prev - 1))
-    } catch(e) { console.error(e) }
-  }
-
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
@@ -236,24 +218,8 @@ const PanelAdmin = () => {
     navigate('/login')
   }
 
-  const formatDate = (d) => {
-    if (!d) return ''
-    const diff = Math.floor((Date.now() - new Date(d)) / 60000)
-    if (diff < 1) return 'Ahora'
-    if (diff < 60) return `Hace ${diff} min`
-    if (diff < 1440) return `Hace ${Math.floor(diff/60)} h`
-    return new Date(d).toLocaleDateString('es-ES')
-  }
-
-  const getNotifIcon = (type) => {
-    if (type === 'APPOINTMENT_CONFIRMED') return <CheckCircle size={15} style={{color:'#22c55e'}} />
-    if (type === 'APPOINTMENT_CANCELLED') return <XCircle size={15} style={{color:'#ef4444'}} />
-    return <Clock size={15} style={{color:'#60a5fa'}} />
-  }
-
   const navigate_section = (id) => { 
     setActiveSection(id)
-    setShowNotifications(false)
   }
 
   const renderSection = () => {
@@ -267,7 +233,7 @@ const PanelAdmin = () => {
       case 'ventas':         return <AdminVentas />
       case 'citas':          return <AdminCitas />
       case 'notificaciones': return <AdminNotificaciones />
-      case 'formulas':       return <AdminFormulas />
+      case 'formulas':       return <AdminFormulas />  // ← Restaurado
       case 'catalogos':      return <AdminCatalogos />
       default:               return <Dashboard />
     }
@@ -340,7 +306,6 @@ const PanelAdmin = () => {
 
       {/* Main */}
       <div className="admin-main new-main">
-        {/* Topbar */}
         <header className="admin-topbar new-topbar">
           <div className="topbar-left">
             <button className="topbar-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
@@ -352,38 +317,6 @@ const PanelAdmin = () => {
             </div>
           </div>
           <div className="topbar-right">
-            <div className="notifications-dropdown-container">
-              <button className="notification-btn" onClick={() => setShowNotifications(!showNotifications)}>
-                <Bell size={20} />
-                {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
-              </button>
-              {showNotifications && (
-                <div className="notifications-dropdown">
-                  <div className="notifications-header">
-                    <h6>Notificaciones</h6>
-                    <button onClick={fetchNotifications} className="mark-all-btn">↺</button>
-                  </div>
-                  <div className="notifications-list">
-                    {notifications.length === 0
-                      ? <div className="no-notifications"><Bell size={24} /><p>Sin notificaciones</p></div>
-                      : notifications.slice(0, 8).map(n => (
-                        <div key={n.notification_id} className={`notification-item ${n.status !== 'READ' ? 'unread' : ''}`} onClick={() => handleMarkRead(n.notification_id)}>
-                          <div className="notification-icon">{getNotifIcon(n.type)}</div>
-                          <div className="notification-content">
-                            <div className="notification-title">{n.subject}</div>
-                            <div className="notification-message">{(n.message || '').slice(0, 55)}{(n.message || '').length > 55 ? '…' : ''}</div>
-                            <div className="notification-time">{formatDate(n.sent_at || n.createdAt)}</div>
-                          </div>
-                        </div>
-                      ))
-                    }
-                  </div>
-                  <div className="notifications-footer">
-                    <button onClick={() => navigate_section('notificaciones')}>Ver todas →</button>
-                  </div>
-                </div>
-              )}
-            </div>
             <div className="topbar-user">
               <div className="avatar sm">{userName.charAt(0).toUpperCase()}</div>
               <span className="topbar-user-name">{userName}</span>
@@ -391,7 +324,6 @@ const PanelAdmin = () => {
           </div>
         </header>
 
-        {/* Content */}
         <main className="admin-content">
           {renderSection()}
         </main>

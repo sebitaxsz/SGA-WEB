@@ -1,42 +1,71 @@
-import React, { useState, useEffect, } from 'react'
+// Profile.jsx - Versión actualizada
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../carrito/CartContext'
 import Navbar from '../Navbar'
+import axiosInstance from '../../services/axiosConfig'
 
 const Profile = () => {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
+  const [customerData, setCustomerData] = useState(null)
   const [activeTab, setActiveTab] = useState('perfil')
+  const [loading, setLoading] = useState(true)
   const { cart } = useCart()
 
   useEffect(() => {
-    // Pequeño delay para evitar el warning
-    const timer = setTimeout(() => {
+    const loadProfile = async () => {
+      const token = localStorage.getItem('token')
       const userData = localStorage.getItem('user')
-      if (userData) {
-        setUser(JSON.parse(userData))
-      } else {
+      
+      if (!token || !userData) {
         navigate('/login')
+        return
       }
-    }, 10) // 10ms es suficiente para evitar el warning
 
-    return () => clearTimeout(timer)
+      const parsedUser = JSON.parse(userData)
+      setUser(parsedUser)
+
+      try {
+        // Cargar datos del customer
+        const response = await axiosInstance.get(`/customer/user/${parsedUser.user_id}`)
+        if (response.data) {
+          setCustomerData(response.data)
+        }
+      } catch (error) {
+        console.error('Error cargando datos del cliente:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadProfile()
   }, [navigate])
 
   const handleLogout = () => {
     localStorage.removeItem('user')
+    localStorage.removeItem('token')
     navigate('/')
   }
 
-  if (!user) {
+  if (loading) {
     return (
-      <div className="container text-center py-5">
+      <div className="container text-center py-5" style={{ marginTop: '100px' }}>
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Cargando...</span>
         </div>
       </div>
     )
   }
+
+  // Determinar el nombre mostrado (priorizar customerData)
+  const displayName = customerData 
+    ? `${customerData.firstName || ''} ${customerData.firstLastName || ''}`.trim()
+    : user?.nombre || user?.firstName || 'Usuario'
+  
+  const displayEmail = customerData?.email || user?.email || user?.user_user || ''
+  const displayPhone = customerData?.phoneNumber || user?.telefono || 'No registrado'
+  const displayAddress = customerData?.address || 'No registrada'
 
   return (
     <div className="container py-5" style={{ marginTop: '100px' }}>
@@ -46,8 +75,8 @@ const Profile = () => {
           <div className="card">
             <div className="card-body text-center">
               <div className="display-1 mb-3">👤</div>
-              <h5>{user.nombre} {user.apellido}</h5>
-              <p className="text-muted">{user.email}</p>
+              <h5>{displayName}</h5>
+              <p className="text-muted">{displayEmail}</p>
               <div className="d-grid gap-2">
                 <button className="btn btn-outline-danger" onClick={handleLogout}>
                   <i className="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
@@ -75,32 +104,28 @@ const Profile = () => {
             >
               <i className="fas fa-calendar me-2"></i>Mis Citas
             </button>
-            <button
-              className={`list-group-item list-group-item-action ${activeTab === 'config' ? 'active' : ''}`}
-              onClick={() => setActiveTab('config')}
-            >
-              <i className="fas fa-cog me-2"></i>Configuración
-            </button>
           </div>
         </div>
 
         <div className="col-md-9">
           {activeTab === 'perfil' && (
             <div className="card">
-              <div className="card-header">
+              <div className="card-header bg-primary text-white">
                 <h5 className="mb-0">Información del Perfil</h5>
               </div>
               <div className="card-body">
                 <div className="row">
                   <div className="col-md-6">
-                    <p><strong>Nombre:</strong> {user.nombre}</p>
-                    <p><strong>Apellido:</strong> {user.apellido}</p>
-                    <p><strong>Email:</strong> {user.email}</p>
+                    <p><strong>Nombre:</strong> {customerData?.firstName || user?.nombre || '—'}</p>
+                    <p><strong>Segundo Nombre:</strong> {customerData?.secondName || '—'}</p>
+                    <p><strong>Apellido:</strong> {customerData?.firstLastName || user?.apellido || '—'}</p>
+                    <p><strong>Segundo Apellido:</strong> {customerData?.secondLastName || '—'}</p>
                   </div>
                   <div className="col-md-6">
-                    <p><strong>Teléfono:</strong> {user.telefono || 'No registrado'}</p>
-                    <p><strong>Miembro desde:</strong> {new Date(user.fechaRegistro).toLocaleDateString()}</p>
-                    <p><strong>Tipo de cuenta:</strong> {user.role === 'admin' ? 'Administrador' : 'Usuario'}</p>
+                    <p><strong>Email:</strong> {displayEmail}</p>
+                    <p><strong>Teléfono:</strong> {displayPhone}</p>
+                    <p><strong>Dirección:</strong> {displayAddress}</p>
+                    <p><strong>Tipo de cuenta:</strong> Cliente</p>
                   </div>
                 </div>
                 <Link to="/editar-perfil" className="btn btn-primary mt-3">
@@ -116,10 +141,9 @@ const Profile = () => {
                 <h5 className="mb-0">Historial de pedidos</h5>
               </div>
               <div className="card-body">
-
                 {cart.length === 0 ? (
                   <>
-                    <p className="text-muted">Aún no has añadido productos.</p>
+                    <p className="text-muted">Aún no has realizado pedidos.</p>
                     <Link to="/productos/gafas-sol" className="btn btn-primary">
                       <i className="fas fa-shopping-cart me-2"></i>Ver Productos
                     </Link>
@@ -140,17 +164,12 @@ const Profile = () => {
                         </li>
                       ))}
                     </ul>
-
                     <div className="d-flex justify-content-between align-items-center">
                       <h5>Total:</h5>
                       <h5 className="text-success">
-                        $
-                        {cart
-                          .reduce((total, item) => total + item.price, 0)
-                          .toLocaleString()}
+                        ${cart.reduce((total, item) => total + item.price, 0).toLocaleString()}
                       </h5>
                     </div>
-
                     <button className="btn btn-success w-100 mt-3">
                       <i className="fas fa-check-circle me-2"></i>Finalizar Pedido
                     </button>
@@ -166,41 +185,13 @@ const Profile = () => {
                 <h5 className="mb-0">Mis Citas</h5>
               </div>
               <div className="card-body">
-                <p>Gestiona tus citas médicas.</p>
+                <p>Gestiona tus citas médicas con nuestros optometristas.</p>
                 <Link to="/citas/ver" className="btn btn-primary me-2">
                   <i className="fas fa-eye me-2"></i>Ver Citas
                 </Link>
                 <Link to="/citas/nueva" className="btn btn-success">
                   <i className="fas fa-plus me-2"></i>Nueva Cita
                 </Link>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'config' && (
-            <div className="card">
-              <div className="card-header">
-                <h5 className="mb-0">Configuración de la Cuenta</h5>
-              </div>
-              <div className="card-body">
-                <div className="mb-3">
-                  <h6>Notificaciones</h6>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" id="notifEmail" defaultChecked />
-                    <label className="form-check-label" htmlFor="notifEmail">
-                      Recibir notificaciones por email
-                    </label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" id="notifOfertas" defaultChecked />
-                    <label className="form-check-label" htmlFor="notifOfertas">
-                      Recibir ofertas y promociones
-                    </label>
-                  </div>
-                </div>
-                <button className="btn btn-primary">
-                  <i className="fas fa-save me-2"></i>Guardar Cambios
-                </button>
               </div>
             </div>
           )}

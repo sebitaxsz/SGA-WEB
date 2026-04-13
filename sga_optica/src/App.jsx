@@ -33,7 +33,7 @@ function App() {
   return (
     <div className="App">
       {/* Banner de envío gratis */}
-      <div className="container-fluid bg-primary text-white text-center py-2">
+      <div className="container-fluid bg-primary text-white text-center py-2 banner-envio">
         <i className="fas fa-shipping-fast me-2"></i> 
         Envíos gratis por compras superiores a $300.000
       </div>

@@ -21,3 +21,14 @@
   width: 100%;
   z-index: 1030;
 }
+
+/* Asegurar que el dropdown del usuario esté por encima */
+.navbar .dropdown-menu {
+  z-index: 1060 !important;
+}
+
+.navbar .dropdown-menu-end {
+  right: 0;
+  left: auto;
+  margin-top: 8px;
+}

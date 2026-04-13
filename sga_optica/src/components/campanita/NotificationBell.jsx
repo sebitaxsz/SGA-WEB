@@ -1,4 +1,4 @@
-// src/components/campanita/NotificationBell.jsx
+// NotificationBell.jsx - Asegurar que solo se muestra para clientes
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { notificationService } from '../../services/notification.service';
@@ -10,20 +10,37 @@ const NotificationBell = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [customerId, setCustomerId] = useState(null);
+  const [isClient, setIsClient] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
-  // 🔧 Función para obtener el customer_id CORRECTO desde la base de datos
+  // Verificar si el usuario es cliente (no admin ni optometra)
+  const checkUserRole = () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const role = (user.role || user.role_name || '').toLowerCase();
+      const isClientRole = role === 'cliente' || role === 'customer' || (!role && !user.role_id);
+      
+      // También verificar si no es admin
+      const isAdmin = role === 'admin' || role === 'administrador' || user.role_id === 1;
+      const isOptometra = role === 'optometra' || role === 'optometrist' || user.role_id === 2;
+      
+      setIsClient(isClientRole && !isAdmin && !isOptometra);
+      return isClientRole && !isAdmin && !isOptometra;
+    } catch (error) {
+      console.error('Error checking role:', error);
+      return false;
+    }
+  };
+
   const getCorrectCustomerId = async (userEmail) => {
     try {
-      console.log('🔍 NotificationBell - Buscando customer_id correcto para:', userEmail);
+      console.log('🔍 NotificationBell - Buscando customer_id para:', userEmail);
       const response = await axiosInstance.get('/customer');
       const customers = response.data || [];
       
-      // Buscar por email
       let customer = customers.find(c => c.email === userEmail);
       
-      // Si no encuentra, buscar por nombre
       if (!customer) {
         customer = customers.find(c => 
           c.firstName?.toLowerCase() === 'marlon' || 
@@ -52,8 +69,16 @@ const NotificationBell = () => {
     }
   };
 
-  // 🔧 Inicializar customer_id correcto
   const initCustomerId = async () => {
+    // Primero verificar si es cliente
+    const isClientUser = checkUserRole();
+    if (!isClientUser) {
+      console.log('NotificationBell - Usuario no es cliente, ocultando notificaciones');
+      setCustomerId(null);
+      setIsClient(false);
+      return;
+    }
+
     const storedId = getStoredCustomerId();
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const userEmail = user.email || user.user_user;
@@ -61,22 +86,18 @@ const NotificationBell = () => {
     console.log('NotificationBell - stored customer_id:', storedId);
     console.log('NotificationBell - userEmail:', userEmail);
     
-    // Si el storedId no es numérico o es null, buscar el correcto
     if (!storedId || isNaN(parseInt(storedId)) || storedId === 13) {
-      // Si es 13 (incorrecto), buscar el correcto
       const correctId = await getCorrectCustomerId(userEmail);
       if (correctId) {
         console.log('✅ NotificationBell - Usando customer_id correcto:', correctId);
         setCustomerId(correctId);
         
-        // Opcional: actualizar localStorage con el ID correcto
         const updatedUser = { ...user, customer_id: correctId };
         localStorage.setItem('user', JSON.stringify(updatedUser));
         return;
       }
     }
     
-    // Si el storedId es válido (6), usarlo
     if (storedId && !isNaN(parseInt(storedId)) && storedId !== 13) {
       console.log('✅ NotificationBell - Usando customer_id de localStorage:', storedId);
       setCustomerId(storedId);
@@ -87,15 +108,14 @@ const NotificationBell = () => {
   };
 
   const fetchNotifications = async () => {
-    // Esperar a tener el customer_id correcto
-    if (!customerId) {
-      console.log('NotificationBell - Esperando customer_id...');
+    if (!customerId || !isClient) {
+      console.log('NotificationBell - No cliente o sin customer_id, omitiendo fetch');
       return;
     }
 
     setLoading(true);
     try {
-      console.log('NotificationBell - Fetching notifications para customerId:', customerId);
+      console.log('NotificationBell - Fetching notifications para cliente:', customerId);
       const response = await notificationService.getNotifications(customerId, { limit: 5 });
       const data = response.data;
       const notificationsList = data.data || [];
@@ -115,19 +135,17 @@ const NotificationBell = () => {
     }
   };
 
-  // Inicializar customer_id al montar el componente
   useEffect(() => {
     initCustomerId();
   }, []);
 
-  // Fetch notificaciones cuando tengamos customer_id
   useEffect(() => {
-    if (customerId) {
+    if (customerId && isClient) {
       fetchNotifications();
       const interval = setInterval(fetchNotifications, 30000);
       return () => clearInterval(interval);
     }
-  }, [customerId]);
+  }, [customerId, isClient]);
 
   const markAsRead = async (notificationId) => {
     try {
@@ -210,9 +228,9 @@ const NotificationBell = () => {
     navigate('/mis-notificaciones');
   };
 
-  // No mostrar el componente si no hay customer_id válido
-  if (!customerId) {
-    console.log('NotificationBell - No customer_id, ocultando componente');
+  // No mostrar el componente si no es cliente o no tiene customer_id
+  if (!isClient || !customerId) {
+    console.log('NotificationBell - No visible para admin/optometra o sin customer_id');
     return null;
   }
 
