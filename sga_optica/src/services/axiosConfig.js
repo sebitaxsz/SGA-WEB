@@ -5,9 +5,9 @@ const API_BASE_URL = 'https://7l77sjp2-3002.use2.devtunnels.ms/api/v1';
 
 // Rutas que NO deben enviar token
 const PUBLIC_ROUTES = [
-  '/auth/request-password-reset',
-  '/auth/verify-reset-code', 
-  '/auth/reset-password',
+  '/request-password-reset',
+  '/verify-reset-code', 
+  '/reset-password',
   '/auth/login',
   '/auth/register'
 ];
