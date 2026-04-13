@@ -25,33 +25,30 @@ const NuevaCita = () => {
   const horasDisponibles = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00']
 
   // 🔧 Función para obtener el customer_id CORRECTO desde la base de datos
-  const getCorrectCustomerId = async (userEmail) => {
+  const getCorrectCustomerId = async (userEmail, userId) => {
     try {
-      console.log('🔍 Buscando customer_id correcto para el email:', userEmail)
+      console.log('🔍 Buscando customer_id para email:', userEmail, 'userId:', userId)
       
-      // Opción 1: Buscar por email en la tabla customer
+      // Opción 1: Buscar por user_id (idUser en la tabla customer)
       const response = await axiosInstance.get('/customer')
       const customers = response.data || []
       
-      // Buscar por email
-      let customer = customers.find(c => c.email === userEmail)
+      // Buscar por idUser primero
+      let customer = customers.find(c => c.idUser === userId)
       
-      // Si no encuentra por email, buscar por nombre
-      if (!customer) {
-        customer = customers.find(c => 
-          c.firstName?.toLowerCase() === 'marlon' || 
-          c.email?.includes('marlon')
-        )
+      // Si no encuentra, buscar por email
+      if (!customer && userEmail) {
+        customer = customers.find(c => c.email === userEmail)
       }
       
       if (customer) {
-        console.log('✅ Cliente encontrado en BD:', customer)
-        console.log('✅ customer_id CORRECTO:', customer.customer_id)
+        console.log('✅ Cliente encontrado:', customer)
+        console.log('✅ customer_id:', customer.customer_id)
         console.log('✅ Nombre:', customer.firstName, customer.firstLastName)
         return customer.customer_id
       }
       
-      console.warn('⚠️ No se encontró cliente con email:', userEmail)
+      console.warn('⚠️ No se encontró cliente para userId:', userId)
       return null
     } catch (error) {
       console.error('❌ Error obteniendo customer_id:', error)
@@ -59,100 +56,36 @@ const NuevaCita = () => {
     }
   }
 
-  // 🔧 Función para obtener el optometrist_id correcto
-  const getCorrectOptometristId = async () => {
+  // 🔧 Función para cargar optometristas desde el backend
+  const loadOptometrists = async () => {
     try {
-      const response = await axiosInstance.get('/optometrist')
-      const optometrists = response.data || []
+      console.log('🔄 Cargando optometristas...')
+      const response = await appointmentService.getOptometrists()
       
-      // Buscar a Juan Perez
-      const juanPerez = optometrists.find(opt => 
-        opt.professionalCardCode === 'PROF-001' || 
-        opt.email === 'juan.perez@ejemplo.com' ||
-        opt.firstName === 'Juan'
-      )
+      let optometristsData = response.data
+      if (response.data?.data) optometristsData = response.data.data
+      if (response.data?.rows) optometristsData = response.data.rows
       
-      if (juanPerez) {
-        console.log('✅ Optometrista Juan Perez encontrado - ID:', juanPerez.id)
-        return juanPerez.id
+      if (optometristsData && optometristsData.length > 0) {
+        setOptometrists(optometristsData)
+        // Seleccionar el primer optometrista por defecto
+        setFormData(prev => ({
+          ...prev,
+          optometrist_id: optometristsData[0].id.toString()
+        }))
+        console.log(`✅ ${optometristsData.length} optometristas cargados`)
+        return optometristsData
+      } else {
+        console.warn('⚠️ No hay optometristas en la BD')
+        return []
       }
-      
-      if (optometrists.length > 0) {
-        console.log('✅ Primer optometrista encontrado - ID:', optometrists[0].id)
-        return optometrists[0].id
-      }
-      
-      return 1 // Fallback
     } catch (error) {
-      console.error('❌ Error obteniendo optometrista:', error)
-      return 1
+      console.error('❌ Error cargando optometristas:', error)
+      return []
     }
   }
 
-  useEffect(() => {
-    const checkAuthAndLoad = async () => {
-      const token = localStorage.getItem('token')
-      const user = localStorage.getItem('user')
-      
-      if (!token || !user) {
-        alert('Debes iniciar sesión para agendar una cita')
-        navigate('/login')
-        return
-      }
-      
-      try {
-        const userDataParsed = JSON.parse(user)
-        console.log('📋 Datos del usuario en localStorage:', userDataParsed)
-        
-        // Solo clientes pueden agendar citas
-        if (userDataParsed.role !== 'user') {
-          alert('Solo los clientes pueden agendar citas')
-          navigate('/')
-          return
-        }
-        
-        // 🔧 OBTENER EL CUSTOMER_ID CORRECTO (6, no 13)
-        const email = userDataParsed.email || userDataParsed.user_user
-        const correctCustomerId = await getCorrectCustomerId(email)
-        
-        if (!correctCustomerId) {
-          console.error('❌ No se pudo obtener customer_id correcto')
-          alert('Error: No se encontró información de cliente. Por favor contacta al administrador.')
-          navigate('/')
-          return
-        }
-        
-        console.log('🎯 Usando customer_id CORRECTO:', correctCustomerId)
-        setVerifiedCustomerId(correctCustomerId)
-        
-        // Obtener el optometrist_id correcto
-        const correctOptometristId = await getCorrectOptometristId()
-        
-        setUserData({
-          ...userDataParsed,
-          customer_id: correctCustomerId
-        })
-        
-        // Seleccionar Juan Perez por defecto
-        setFormData(prev => ({
-          ...prev,
-          optometrist_id: correctOptometristId.toString()
-        }))
-        
-        // Cargar tipos de examen
-        await loadExamTypes()
-        
-      } catch (error) {
-        console.error('Error:', error)
-        navigate('/login')
-      } finally {
-        setLoadingData(false)
-      }
-    }
-    
-    checkAuthAndLoad()
-  }, [navigate])
-
+  // 🔧 Función para cargar tipos de examen
   const loadExamTypes = async () => {
     try {
       console.log('🔄 Cargando tipos de examen...')
@@ -171,25 +104,91 @@ const NuevaCita = () => {
         }))
         console.log(`✅ ${examTypesData.length} tipos de examen cargados`)
       } else {
-        // Datos de respaldo
-        const backupExamTypes = [
-          { id: 1, name: 'Examen de Agudeza Visual', description: 'Evaluación básica de la visión' },
-          { id: 2, name: 'Examen de Refracción', description: 'Medición de graduación' },
-          { id: 3, name: 'Tonometría', description: 'Medición de presión ocular' }
+        console.warn('⚠️ No hay tipos de examen en la BD, usando datos por defecto')
+        const defaultExamTypes = [
+          { id: 1, name: 'Examen de Agudeza Visual', description: 'Evaluación básica de la visión', duration_minutes: 30 },
+          { id: 2, name: 'Examen de Refracción', description: 'Medición de graduación', duration_minutes: 45 },
+          { id: 3, name: 'Tonometría', description: 'Medición de presión ocular', duration_minutes: 20 },
+          { id: 4, name: 'Fondo de Ojo', description: 'Examen del nervio óptico y retina', duration_minutes: 30 }
         ]
-        setExamTypes(backupExamTypes)
+        setExamTypes(defaultExamTypes)
         setFormData(prev => ({ ...prev, exam_type_id: '1' }))
       }
     } catch (error) {
       console.error('❌ Error cargando tipos de examen:', error)
-      setExamTypes([
-        { id: 1, name: 'Examen de Agudeza Visual', description: 'Evaluación básica de la visión' },
-        { id: 2, name: 'Examen de Refracción', description: 'Medición de graduación' },
-        { id: 3, name: 'Tonometría', description: 'Medición de presión ocular' }
-      ])
+      // Datos de respaldo
+      const backupExamTypes = [
+        { id: 1, name: 'Examen de Agudeza Visual', description: 'Evaluación básica de la visión', duration_minutes: 30 },
+        { id: 2, name: 'Examen de Refracción', description: 'Medición de graduación', duration_minutes: 45 },
+        { id: 3, name: 'Tonometría', description: 'Medición de presión ocular', duration_minutes: 20 }
+      ]
+      setExamTypes(backupExamTypes)
       setFormData(prev => ({ ...prev, exam_type_id: '1' }))
     }
   }
+
+  useEffect(() => {
+    const checkAuthAndLoad = async () => {
+      const token = localStorage.getItem('token')
+      const user = localStorage.getItem('user')
+      
+      if (!token || !user) {
+        alert('Debes iniciar sesión para agendar una cita')
+        navigate('/login')
+        return
+      }
+      
+      try {
+        const userDataParsed = JSON.parse(user)
+        console.log('📋 Datos del usuario en localStorage:', userDataParsed)
+        
+        // Verificar rol - solo clientes pueden agendar
+        const roleLower = (userDataParsed.role_lower || userDataParsed.role || '').toLowerCase()
+        const isAdmin = roleLower === 'admin' || roleLower === 'administrador'
+        const isOptometrist = roleLower === 'optometrist' || roleLower === 'optometrista'
+        
+        if (isAdmin || isOptometrist) {
+          alert('Solo los clientes pueden agendar citas')
+          navigate('/')
+          return
+        }
+        
+        // Obtener el customer_id correcto
+        const userId = userDataParsed.user_id
+        const email = userDataParsed.email || userDataParsed.user_user
+        const correctCustomerId = await getCorrectCustomerId(email, userId)
+        
+        if (!correctCustomerId) {
+          console.error('❌ No se pudo obtener customer_id')
+          alert('Error: No se encontró información de cliente. Por favor contacta al administrador.')
+          navigate('/')
+          return
+        }
+        
+        console.log('🎯 Usando customer_id:', correctCustomerId)
+        setVerifiedCustomerId(correctCustomerId)
+        
+        setUserData({
+          ...userDataParsed,
+          customer_id: correctCustomerId
+        })
+        
+        // Cargar optometristas y tipos de examen en paralelo
+        await Promise.all([
+          loadOptometrists(),
+          loadExamTypes()
+        ])
+        
+      } catch (error) {
+        console.error('Error en inicialización:', error)
+        navigate('/login')
+      } finally {
+        setLoadingData(false)
+      }
+    }
+    
+    checkAuthAndLoad()
+  }, [navigate])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -221,7 +220,7 @@ const NuevaCita = () => {
       return
     }
 
-    // Usar el customer_id verificado (6)
+    // Usar el customer_id verificado
     const finalCustomerId = verifiedCustomerId || userData?.customer_id
     
     if (!finalCustomerId) {
@@ -231,7 +230,7 @@ const NuevaCita = () => {
     }
 
     console.log('=== ENVIANDO CITA ===')
-    console.log('customer_id a usar:', finalCustomerId)
+    console.log('customer_id:', finalCustomerId)
     console.log('exam_type_id:', formData.exam_type_id)
     console.log('optometrist_id:', formData.optometrist_id)
     console.log('fecha:', formData.date)
@@ -246,7 +245,7 @@ const NuevaCita = () => {
         optometrist_id: parseInt(formData.optometrist_id)
       }
 
-      console.log('📅 Body de la petición:', JSON.stringify(appointmentData, null, 2))
+      console.log('📅 Body:', JSON.stringify(appointmentData, null, 2))
 
       const response = await appointmentService.createAppointment(appointmentData)
 
@@ -289,6 +288,10 @@ const NuevaCita = () => {
     )
   }
 
+  // Obtener nombre del cliente
+  const customerName = userData?.nombre || userData?.firstName || 'Cliente'
+  const customerDisplayId = verifiedCustomerId || '...'
+
   return (
     <div className="container py-5" style={{ marginTop: '100px' }}>
       <div className="row justify-content-center">
@@ -298,7 +301,7 @@ const NuevaCita = () => {
               <h2 className="mb-0">📅 Agendar Nueva Cita</h2>
               <p className="mb-0 mt-2">
                 <i className="fas fa-user me-2"></i>
-                Cliente: Marlon Castañeda (ID: {verifiedCustomerId || '...'})
+                Cliente: {customerName} (ID: {customerDisplayId})
               </p>
             </div>
             <div className="card-body">
@@ -343,6 +346,7 @@ const NuevaCita = () => {
                         <option key={hora} value={hora}>{hora}</option>
                       ))}
                     </select>
+                    <small className="text-muted">Horario: 9:00 AM - 5:00 PM</small>
                   </div>
                 </div>
 
@@ -358,7 +362,8 @@ const NuevaCita = () => {
                     <option value="">Seleccione un tipo de examen</option>
                     {examTypes.map(exam => (
                       <option key={exam.id} value={exam.id}>
-                        {exam.name} {exam.description && `- ${exam.description}`}
+                        {exam.name} {exam.duration_minutes && `(${exam.duration_minutes} min)`}
+                        {exam.description && ` - ${exam.description}`}
                       </option>
                     ))}
                   </select>
@@ -374,14 +379,24 @@ const NuevaCita = () => {
                     required
                   >
                     <option value="">Seleccione un optometrista</option>
-                    <option value="1">Juan Perez - PROF-001</option>
+                    {optometrists.map(opt => (
+                      <option key={opt.id} value={opt.id}>
+                        {opt.firstName} {opt.firstLastName} 
+                        {opt.professionalCardCode && ` - ${opt.professionalCardCode}`}
+                      </option>
+                    ))}
                   </select>
+                  {optometrists.length === 0 && (
+                    <div className="text-warning mt-1">
+                      <small>⚠️ No hay optometristas registrados. Contacta al administrador.</small>
+                    </div>
+                  )}
                 </div>
 
                 <div className="alert alert-info mt-3">
                   <i className="fas fa-info-circle me-2"></i>
                   <small>
-                    Recibirás un recordatorio por correo electrónico y en tus notificaciones.
+                    Recibirás un recordatorio en tus notificaciones.
                   </small>
                 </div>
 
@@ -389,7 +404,11 @@ const NuevaCita = () => {
                   <Link to="/" className="btn btn-secondary me-md-2">
                     Cancelar
                   </Link>
-                  <button type="submit" className="btn btn-primary" disabled={loading}>
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary" 
+                    disabled={loading || optometrists.length === 0}
+                  >
                     {loading ? 'Agendando...' : 'Agendar Cita'}
                   </button>
                 </div>

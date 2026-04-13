@@ -25,7 +25,7 @@ const EditarPerfil = () => {
   const [successMessage, setSuccessMessage] = useState('')
 
   useEffect(() => {
-    const loadUserData = async () => {
+    const loadUserData = () => {
       const token = localStorage.getItem('token')
       const user = JSON.parse(localStorage.getItem('user') || '{}')
       
@@ -34,34 +34,28 @@ const EditarPerfil = () => {
         return
       }
 
+      // Verificar que sea cliente
+      if (user.is_admin === true || user.is_optometrist === true) {
+        setErrors({ general: 'Acceso restringido. Solo los clientes pueden editar su perfil.' })
+        setLoading(false)
+        return
+      }
+
       setUserData(user)
       
-      try {
-        // Obtener datos del customer por user_id
-        const response = await axiosInstance.get(`/customer/user/${user.user_id}`)
-        if (response.data) {
-          const customer = response.data
-          setFormData(prev => ({
-            ...prev,
-            firstName: customer.firstName || '',
-            secondName: customer.secondName || '',
-            firstLastName: customer.firstLastName || '',
-            secondLastName: customer.secondLastName || '',
-            phoneNumber: customer.phoneNumber || '',
-            email: customer.email || '',
-            address: customer.address || ''
-          }))
-        }
-      } catch (error) {
-        console.error('Error cargando datos del customer:', error)
-        if (error.response?.status === 404) {
-          setErrors({ general: 'Perfil de cliente no encontrado. Contacta al administrador.' })
-        } else {
-          setErrors({ general: 'Error al cargar los datos del perfil' })
-        }
-      } finally {
-        setLoading(false)
-      }
+      // Cargar datos desde localStorage (ahora vienen completos del login)
+      setFormData(prev => ({
+        ...prev,
+        firstName: user.firstName || '',
+        secondName: user.secondName || '',
+        firstLastName: user.firstLastName || '',
+        secondLastName: user.secondLastName || '',
+        phoneNumber: user.phoneNumber || '',
+        email: user.email || '',
+        address: user.address || ''
+      }))
+      
+      setLoading(false)
     }
 
     loadUserData()
@@ -136,13 +130,18 @@ const EditarPerfil = () => {
       if (response.data.message) {
         setSuccessMessage('Perfil actualizado exitosamente')
         
-        // Actualizar localStorage
+        // Actualizar localStorage con los nuevos datos
         const updatedUser = {
           ...userData,
-          nombre: formData.firstName,
-          apellido: formData.firstLastName,
+          firstName: formData.firstName,
+          secondName: formData.secondName,
+          firstLastName: formData.firstLastName,
+          secondLastName: formData.secondLastName,
+          phoneNumber: formData.phoneNumber,
           email: formData.email,
-          telefono: formData.phoneNumber
+          address: formData.address,
+          nombre: formData.firstName,
+          apellido: formData.firstLastName
         }
         localStorage.setItem('user', JSON.stringify(updatedUser))
         

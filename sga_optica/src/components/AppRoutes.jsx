@@ -11,6 +11,9 @@ import Navbar from './Navbar'
 import NuevaCita from './citas/NuevaCita'
 import VerCitas from './citas/VerCitas'
 
+// Importar componente gestion de citas para optometrista
+import GestionCitas from './optometrista/GestionCitas'
+
 // Importar componentes de clínica
 import Examenes from './Clinica/Examenes'
 import Servicios from './Clinica/Servicios'
@@ -22,7 +25,6 @@ import Profile from './registro/Profile'
 import EditarPerfil from './registro/EditarPerfil'
 import ForgotPassword from './registro/ForgotPassword'
 import ResetPassword from './registro/ResetPassword'
-import PerfilOptometrista from './registro/PerfilOptometrista'
 
 // Importar componente de carrito
 import CartPage from './carrito/CartPage'
@@ -65,8 +67,8 @@ function AppRouter() {
         <Route path="/forgot-password" element={<LayoutWithNavbar><ForgotPassword /></LayoutWithNavbar>} />
         <Route path="/reset-password" element={<LayoutWithNavbar><ResetPassword /></LayoutWithNavbar>} />
 
-        {/* Ruta de perfil optometrista */}
-        <Route path="/perfil-optometrista" element={<LayoutWithNavbar><PerfilOptometrista /></LayoutWithNavbar>} />
+        {/* Ruta de gestion de citas para optometrista */}
+        <Route path="/gestion-citas" element={<LayoutWithNavbar><GestionCitas /></LayoutWithNavbar>} />
 
         {/* Rutas de carrito y pedidos */}
         <Route path="/carrito" element={<LayoutWithNavbar><CartPage /></LayoutWithNavbar>} />

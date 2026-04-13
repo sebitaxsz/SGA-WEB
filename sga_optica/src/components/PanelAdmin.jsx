@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Users, Package, Calendar, DollarSign,
   LogOut, Bell, FileText, LayoutDashboard, Stethoscope,
-  Tag, Clock, CheckCircle, XCircle,
-  FileSearch, Menu
+  Tag, FileSearch, Menu
 } from 'lucide-react'
 
 import Reportes from './reportes/Reportes'
@@ -18,7 +17,7 @@ import AdminVentas from './admin/AdminVentas'
 import AdminNotificaciones from './admin/AdminNotificaciones'
 import AdminFormulas from './admin/AdminFormulas'
 
-import { getNotifications, markNotifRead, getSales, getCustomers, getProducts, getAppointments } from '../services/admin.service'
+import { getSales, getCustomers, getProducts, getAppointments } from '../services/admin.service'
 import './Admin.css'
 import './admin/AdminPanel.css'
 
@@ -168,14 +167,11 @@ function Dashboard() {
 /* ── Panel Principal ── */
 const PanelAdmin = () => {
   const navigate = useNavigate()
-  const [activeSection, setActiveSection]     = useState('dashboard')
-  const [isAdmin, setIsAdmin]                 = useState(false)
-  const [loading, setLoading]                 = useState(true)
-  const [userName, setUserName]               = useState('')
-  const [notifications, setNotifications]     = useState([])
-  const [showNotifications, setShowNotifications] = useState(false)
-  const [unreadCount, setUnreadCount]         = useState(0)
-  const [sidebarOpen, setSidebarOpen]         = useState(true)
+  const [activeSection, setActiveSection] = useState('dashboard')
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [userName, setUserName] = useState('')
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   // Agregar clase al body para estilos específicos del admin
   useEffect(() => {
@@ -200,26 +196,6 @@ const PanelAdmin = () => {
     finally { setLoading(false) }
   }, [navigate])
 
-  // Cargar notificaciones cuando el admin está verificado
-  const fetchNotifications = async () => {
-    try {
-      const res  = await getNotifications()
-      const data = res.data?.data || res.data || []
-      setNotifications(data)
-      setUnreadCount(data.filter(n => n.status === 'PENDING' || n.status === 'SENT').length)
-    } catch (e) { console.error(e) }
-  }
-
-  useEffect(() => { if (isAdmin) fetchNotifications() }, [isAdmin])
-
-  const handleMarkRead = async (id) => {
-    try {
-      await markNotifRead(id)
-      setNotifications(prev => prev.map(n => n.notification_id === id ? { ...n, status: 'READ' } : n))
-      setUnreadCount(prev => Math.max(0, prev - 1))
-    } catch (e) { console.error(e) }
-  }
-
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
@@ -227,24 +203,8 @@ const PanelAdmin = () => {
     navigate('/login')
   }
 
-  const formatDate = (d) => {
-    if (!d) return ''
-    const diff = Math.floor((Date.now() - new Date(d)) / 60000)
-    if (diff < 1)    return 'Ahora'
-    if (diff < 60)   return `Hace ${diff} min`
-    if (diff < 1440) return `Hace ${Math.floor(diff / 60)} h`
-    return new Date(d).toLocaleDateString('es-ES')
-  }
-
-  const getNotifIcon = (type) => {
-    if (type === 'APPOINTMENT_CONFIRMED') return <CheckCircle size={15} style={{ color: '#22c55e' }} />
-    if (type === 'APPOINTMENT_CANCELLED') return <XCircle    size={15} style={{ color: '#ef4444' }} />
-    return <Clock size={15} style={{ color: '#60a5fa' }} />
-  }
-
   const navigate_section = (id) => {
     setActiveSection(id)
-    setShowNotifications(false)
   }
 
   const renderSection = () => {
@@ -330,7 +290,7 @@ const PanelAdmin = () => {
       {/* ── Main ── */}
       <div className="admin-main new-main">
 
-        {/* Topbar */}
+        {/* Topbar - SIN campanita de notificaciones */}
         <header className="admin-topbar new-topbar">
           <div className="topbar-left">
             <button className="topbar-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
@@ -343,49 +303,6 @@ const PanelAdmin = () => {
           </div>
 
           <div className="topbar-right">
-            {/* Campanita de notificaciones */}
-            <div className="notifications-dropdown-container">
-              <button className="notification-btn" onClick={() => setShowNotifications(!showNotifications)}>
-                <Bell size={20} />
-                {unreadCount > 0 && (
-                  <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
-                )}
-              </button>
-
-              {showNotifications && (
-                <div className="notifications-dropdown">
-                  <div className="notifications-header">
-                    <h6>Notificaciones</h6>
-                    <button onClick={fetchNotifications} className="mark-all-btn">↺</button>
-                  </div>
-                  <div className="notifications-list">
-                    {notifications.length === 0
-                      ? <div className="no-notifications"><Bell size={24} /><p>Sin notificaciones</p></div>
-                      : notifications.slice(0, 8).map(n => (
-                        <div
-                          key={n.notification_id}
-                          className={`notification-item ${n.status !== 'READ' ? 'unread' : ''}`}
-                          onClick={() => handleMarkRead(n.notification_id)}
-                        >
-                          <div className="notification-icon">{getNotifIcon(n.type)}</div>
-                          <div className="notification-content">
-                            <div className="notification-title">{n.subject}</div>
-                            <div className="notification-message">
-                              {(n.message || '').slice(0, 55)}{(n.message || '').length > 55 ? '…' : ''}
-                            </div>
-                            <div className="notification-time">{formatDate(n.sent_at || n.createdAt)}</div>
-                          </div>
-                        </div>
-                      ))
-                    }
-                  </div>
-                  <div className="notifications-footer">
-                    <button onClick={() => navigate_section('notificaciones')}>Ver todas →</button>
-                  </div>
-                </div>
-              )}
-            </div>
-
             <div className="topbar-user">
               <div className="avatar sm">{userName.charAt(0).toUpperCase()}</div>
               <span className="topbar-user-name">{userName}</span>

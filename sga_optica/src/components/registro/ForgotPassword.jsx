@@ -1,3 +1,4 @@
+// src/components/ForgotPassword.jsx
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authService } from '../../services/auth.service'
@@ -9,11 +10,13 @@ const ForgotPassword = () => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
+  const [backupCode, setBackupCode] = useState('')  // ← Agregar estado para el código
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setSuccess('')
+    setBackupCode('')  // ← Limpiar código anterior
     setLoading(true)
 
     if (!email.trim()) {
@@ -31,19 +34,27 @@ const ForgotPassword = () => {
     try {
       const response = await authService.requestPasswordReset(email)
       
+      console.log('📦 Respuesta completa:', response.data)  // ← Ver en consola
+      
       localStorage.setItem('resetEmail', email)
       
+      // ✅ Mostrar el código si viene en la respuesta
       if (response.data.code) {
+        setBackupCode(response.data.code)
         localStorage.setItem('resetCode', response.data.code)
+        setSuccess(`⚠️ Correo de prueba. Tu código es: ${response.data.code}`)
+      } else if (response.data.message) {
+        setSuccess(response.data.message)
+      } else {
+        setSuccess(`Se ha enviado un código de verificación a ${email}`)
       }
-
-      setSuccess(`Se ha enviado un código de verificación a ${email}. Por favor revisa tu correo.`)
       
       setTimeout(() => {
         navigate('/reset-password')
-      }, 2000)
+      }, 4000)  // ← Aumentado a 4 segundos para leer el código
 
     } catch (err) {
+      console.error('❌ Error:', err.response?.data)
       setError(err.response?.data?.message || 'Error al solicitar recuperación')
     } finally {
       setLoading(false)
@@ -75,6 +86,24 @@ const ForgotPassword = () => {
                   <i className="fas fa-check-circle me-2"></i>
                   {success}
                   <button type="button" className="btn-close" onClick={() => setSuccess('')}></button>
+                </div>
+              )}
+
+              {/* ✅ Mostrar el código de respaldo de forma destacada */}
+              {backupCode && (
+                <div className="alert alert-info text-center" style={{ backgroundColor: '#e3f2fd', border: '2px solid #0066cc' }}>
+                  <i className="fas fa-key me-2"></i>
+                  <strong>Código de verificación (copia este número):</strong>
+                  <h1 className="mt-2 mb-0" style={{ 
+                    fontSize: '48px', 
+                    letterSpacing: '8px',
+                    fontFamily: 'monospace',
+                    fontWeight: 'bold',
+                    color: '#0066cc'
+                  }}>
+                    {backupCode}
+                  </h1>
+                  <small className="text-muted">Este código expira en 15 minutos</small>
                 </div>
               )}
 

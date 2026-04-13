@@ -1,3 +1,4 @@
+// src/components/ResetPassword.jsx
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authService } from '../../services/auth.service'
@@ -13,19 +14,31 @@ const ResetPassword = () => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
+  const [savedCode, setSavedCode] = useState('') // Para mostrar el código guardado
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('resetEmail')
+    const resetCode = localStorage.getItem('resetCode')
+    
+    console.log('📧 Email guardado:', savedEmail)
+    console.log('🔑 Código guardado:', resetCode)
+    
     if (!savedEmail) {
       navigate('/forgot-password')
     } else {
       setEmail(savedEmail)
+      if (resetCode) {
+        setSavedCode(resetCode)
+        setCode(resetCode) // Auto-completar el código
+        setSuccess(`✅ Código cargado automáticamente: ${resetCode}`)
+      }
     }
   }, [navigate])
 
   const verifyCode = async (e) => {
     e.preventDefault()
     setError('')
+    setSuccess('')
     setLoading(true)
 
     if (!code.trim()) {
@@ -35,10 +48,14 @@ const ResetPassword = () => {
     }
 
     try {
-      await authService.verifyResetCode(email, code)
+      console.log('🔍 Verificando código:', code)
+      const response = await authService.verifyResetCode(email, code)
+      console.log('✅ Respuesta verificación:', response.data)
+      
       setStep(2)
-      setSuccess('Código verificado correctamente')
+      setSuccess('✅ Código verificado correctamente')
     } catch (err) {
+      console.error('❌ Error verificación:', err.response?.data)
       setError(err.response?.data?.message || 'Código incorrecto')
     } finally {
       setLoading(false)
@@ -48,6 +65,7 @@ const ResetPassword = () => {
   const resetPassword = async (e) => {
     e.preventDefault()
     setError('')
+    setSuccess('')
     setLoading(true)
 
     if (!newPassword) {
@@ -69,17 +87,21 @@ const ResetPassword = () => {
     }
 
     try {
-      await authService.resetPassword(email, code, newPassword, confirmPassword)
+      console.log('🔐 Restableciendo contraseña para:', email)
+      const response = await authService.resetPassword(email, code, newPassword, confirmPassword)
+      console.log('✅ Respuesta restablecimiento:', response.data)
       
-      setSuccess('¡Contraseña restablecida exitosamente!')
+      setSuccess('✅ ¡Contraseña restablecida exitosamente! Redirigiendo al login...')
       
+      // Limpiar localStorage
       localStorage.removeItem('resetEmail')
       localStorage.removeItem('resetCode')
       
       setTimeout(() => {
         navigate('/login')
-      }, 2000)
+      }, 3000)
     } catch (err) {
+      console.error('❌ Error restablecimiento:', err.response?.data)
       setError(err.response?.data?.message || 'Error al restablecer la contraseña')
     } finally {
       setLoading(false)
@@ -88,12 +110,25 @@ const ResetPassword = () => {
 
   const resendCode = async () => {
     setError('')
+    setSuccess('')
     setLoading(true)
 
     try {
-      await authService.requestPasswordReset(email)
-      setSuccess('Se ha enviado un nuevo código a tu correo')
+      console.log('📧 Reenviando código a:', email)
+      const response = await authService.requestPasswordReset(email)
+      console.log('✅ Respuesta reenvío:', response.data)
+      
+      // Guardar el nuevo código si viene
+      if (response.data.code) {
+        localStorage.setItem('resetCode', response.data.code)
+        setSavedCode(response.data.code)
+        setCode(response.data.code)
+        setSuccess(`✅ Nuevo código enviado: ${response.data.code}`)
+      } else {
+        setSuccess('✅ Se ha enviado un nuevo código a tu correo')
+      }
     } catch (err) {
+      console.error('❌ Error reenvío:', err.response?.data)
       setError(err.response?.data?.message || 'Error al reenviar código')
     } finally {
       setLoading(false)
@@ -132,6 +167,24 @@ const ResetPassword = () => {
                 </div>
               )}
 
+              {/* Mostrar código guardado si existe */}
+              {savedCode && step === 1 && (
+                <div className="alert alert-info text-center" style={{ backgroundColor: '#e3f2fd', border: '2px solid #0066cc' }}>
+                  <i className="fas fa-key me-2"></i>
+                  <strong>Código guardado:</strong>
+                  <h2 className="mt-2 mb-0" style={{ 
+                    fontSize: '36px', 
+                    letterSpacing: '8px',
+                    fontFamily: 'monospace',
+                    fontWeight: 'bold',
+                    color: '#0066cc'
+                  }}>
+                    {savedCode}
+                  </h2>
+                  <small className="text-muted">El código se ha cargado automáticamente</small>
+                </div>
+              )}
+
               {step === 1 ? (
                 <form onSubmit={verifyCode}>
                   <div className="mb-4">
@@ -149,6 +202,9 @@ const ResetPassword = () => {
                       disabled={loading}
                       style={{ fontSize: '1.5rem', letterSpacing: '4px' }}
                     />
+                    <div className="form-text">
+                      Ingresa el código de 6 dígitos que recibiste
+                    </div>
                   </div>
 
                   <div className="d-grid gap-2">
@@ -163,7 +219,10 @@ const ResetPassword = () => {
                           Verificando...
                         </>
                       ) : (
-                        'Verificar Código'
+                        <>
+                          <i className="fas fa-check-circle me-2"></i>
+                          Verificar Código
+                        </>
                       )}
                     </button>
                     
@@ -173,6 +232,7 @@ const ResetPassword = () => {
                       onClick={resendCode}
                       disabled={loading}
                     >
+                      <i className="fas fa-redo me-2"></i>
                       Reenviar Código
                     </button>
                   </div>
@@ -221,7 +281,10 @@ const ResetPassword = () => {
                           Restableciendo...
                         </>
                       ) : (
-                        'Restablecer Contraseña'
+                        <>
+                          <i className="fas fa-save me-2"></i>
+                          Restablecer Contraseña
+                        </>
                       )}
                     </button>
                   </div>
@@ -233,6 +296,17 @@ const ResetPassword = () => {
                   <i className="fas fa-arrow-left me-1"></i>
                   Volver al inicio de sesión
                 </Link>
+              </div>
+
+              <hr className="my-4" />
+
+              <div className="text-center">
+                <div className="alert alert-light" role="alert">
+                  <i className="fas fa-info-circle me-2"></i>
+                  <strong>¿Problemas con el código?</strong>
+                  <br />
+                  <small>Verifica tu correo electrónico o solicita un nuevo código.</small>
+                </div>
               </div>
             </div>
           </div>

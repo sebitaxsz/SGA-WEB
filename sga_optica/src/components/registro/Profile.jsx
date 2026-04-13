@@ -2,12 +2,10 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../carrito/CartContext'
 import { formulaService } from '../../services/formula.service'
-import axiosInstance from '../../services/axiosConfig'
 
 const Profile = () => {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
-  const [customerData, setCustomerData] = useState(null)
   const [activeTab, setActiveTab] = useState('perfil')
   const [loading, setLoading] = useState(true)
   const { cart } = useCart()
@@ -30,7 +28,7 @@ const Profile = () => {
       sessionStorage.removeItem('profileTab')
     }
 
-    const loadProfile = async () => {
+    const loadProfile = () => {
       const token = localStorage.getItem('token')
       const userData = localStorage.getItem('user')
 
@@ -41,18 +39,7 @@ const Profile = () => {
 
       const parsedUser = JSON.parse(userData)
       setUser(parsedUser)
-
-      try {
-        // Cargar datos del customer desde la API
-        const response = await axiosInstance.get(`/customer/user/${parsedUser.user_id}`)
-        if (response.data) {
-          setCustomerData(response.data)
-        }
-      } catch (error) {
-        console.error('Error cargando datos del cliente:', error)
-      } finally {
-        setLoading(false)
-      }
+      setLoading(false)
     }
 
     loadProfile()
@@ -155,13 +142,16 @@ const Profile = () => {
     )
   }
 
-  // Datos a mostrar priorizando customerData (de la API) sobre localStorage
-  const displayName = customerData
-    ? `${customerData.firstName || ''} ${customerData.firstLastName || ''}`.trim()
-    : user?.nombre || user?.firstName || 'Usuario'
-  const displayEmail = customerData?.email || user?.email || user?.user_user || ''
-  const displayPhone = customerData?.phoneNumber || user?.telefono || 'No registrado'
-  const displayAddress = customerData?.address || 'No registrada'
+  // Datos a mostrar desde localStorage (actualizados después de editar perfil)
+  const displayName = user?.firstName && user?.firstLastName
+    ? `${user.firstName} ${user.firstLastName}`.trim()
+    : user?.nombre || 'Usuario'
+  
+  const displayEmail = user?.email || user?.user_user || ''
+  const displayPhone = user?.phoneNumber || user?.telefono || 'No registrado'
+  const displayAddress = user?.address || 'No registrada'
+  const displaySecondName = user?.secondName || '—'
+  const displaySecondLastName = user?.secondLastName || '—'
 
   return (
     <div className="container py-5" style={{ marginTop: '100px' }}>
@@ -231,10 +221,10 @@ const Profile = () => {
               <div className="card-body">
                 <div className="row">
                   <div className="col-md-6">
-                    <p><strong>Nombre:</strong> {customerData?.firstName || user?.nombre || '—'}</p>
-                    <p><strong>Segundo Nombre:</strong> {customerData?.secondName || '—'}</p>
-                    <p><strong>Apellido:</strong> {customerData?.firstLastName || user?.apellido || '—'}</p>
-                    <p><strong>Segundo Apellido:</strong> {customerData?.secondLastName || '—'}</p>
+                    <p><strong>Nombre:</strong> {user?.firstName || user?.nombre || '—'}</p>
+                    <p><strong>Segundo Nombre:</strong> {displaySecondName}</p>
+                    <p><strong>Apellido:</strong> {user?.firstLastName || user?.apellido || '—'}</p>
+                    <p><strong>Segundo Apellido:</strong> {displaySecondLastName}</p>
                   </div>
                   <div className="col-md-6">
                     <p><strong>Email:</strong> {displayEmail}</p>
