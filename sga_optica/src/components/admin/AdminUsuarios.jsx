@@ -289,6 +289,7 @@ export default function AdminUsuarios() {
                     onChange={e => setForm({...form, role_id: e.target.value})}
                   >
                     <option value="">Seleccionar rol...</option>
+                    {/* Todos los roles disponibles en la BD */}
                     {roles.map(r => (
                       <option key={r.role_id} value={r.role_id}>{r.role_name}</option>
                     ))}

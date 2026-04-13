@@ -176,10 +176,14 @@ const PanelAdmin = () => {
     if (!token || !user) { navigate('/login'); return }
     try {
       const userData = JSON.parse(user)
-      const roleVal = (userData.role || userData.role_name || '').toLowerCase(); const isUserAdmin = roleVal === 'admin' || roleVal === 'administrador' || userData.role_id === 1
+      // Detectar admin: lee is_admin (flag directo de Login.jsx)
+      // o compara role en minúscula contra lista de roles admin
+      const ADMIN_ROLES = ['administrador', 'admin']
+      const roleLower = (userData.role_lower || userData.role || '').toLowerCase()
+      const isUserAdmin = userData.is_admin === true || ADMIN_ROLES.includes(roleLower)
       if (!isUserAdmin) { navigate('/'); return }
       setIsAdmin(true)
-      setUserName(userData.nombre || userData.firstName || 'Administrador')
+      setUserName(userData.nombre || userData.user_user || 'Administrador')
     } catch { navigate('/') }
     finally { setLoading(false) }
   }, [navigate])

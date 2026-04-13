@@ -32,6 +32,8 @@ import CartPage from './carrito/CartPage'
 //Importar componente de notificación
 import MisNotificaciones from './campanita/MisNotificaciones';
 
+import PerfilOptometrista from './registro/PerfilOptometrista'
+
 function AppRouter() {
   return (
     <Router>
@@ -66,6 +68,9 @@ function AppRouter() {
 
         {/* Ruta de notificaciones */}
         <Route path="/mis-notificaciones" element={<MisNotificaciones />} />
+
+        {/* Ruta de perfil optometrista */}
+        <Route path="/perfil-optometrista" element={<PerfilOptometrista />} />
       </Routes>
     </Router>
   )
