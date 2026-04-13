@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Users, Package, Calendar, DollarSign, Settings,
+  Users, Package, Calendar, DollarSign,
   LogOut, Bell, FileText, LayoutDashboard, Stethoscope,
-  Tag, X, Check, Clock, CheckCircle, XCircle, ChevronRight,
-  ShoppingCart, FileSearch, Menu
+  Tag, Clock, CheckCircle, XCircle,
+  FileSearch, Menu
 } from 'lucide-react'
 
 import Reportes from './reportes/Reportes'
@@ -26,41 +26,43 @@ const NAV = [
   {
     section: 'Principal',
     items: [
-      { id: 'dashboard',       label: 'Dashboard',       icon: LayoutDashboard },
-      { id: 'reportes',        label: 'Reportes',         icon: FileText },
+      { id: 'dashboard',      label: 'Dashboard',            icon: LayoutDashboard },
+      { id: 'reportes',       label: 'Reportes',             icon: FileText },
     ]
   },
   {
     section: 'Gestión',
     items: [
-      { id: 'usuarios',        label: 'Usuarios',         icon: Users },
-      { id: 'clientes',        label: 'Clientes',         icon: Users },
-      { id: 'optometras',      label: 'Optómetras',       icon: Stethoscope },
-      { id: 'productos',       label: 'Productos',        icon: Package },
-      { id: 'ventas',          label: 'Ventas',           icon: DollarSign },
-      { id: 'citas',           label: 'Citas',            icon: Calendar },
+      { id: 'usuarios',       label: 'Usuarios',             icon: Users },
+      { id: 'clientes',       label: 'Clientes',             icon: Users },
+      { id: 'optometras',     label: 'Optómetras',           icon: Stethoscope },
+      { id: 'productos',      label: 'Productos',            icon: Package },
+      { id: 'ventas',         label: 'Ventas',               icon: DollarSign },
+      { id: 'citas',          label: 'Citas',                icon: Calendar },
     ]
   },
   {
     section: 'Sistema',
     items: [
-      { id: 'notificaciones',  label: 'Notificaciones',   icon: Bell },
-      { id: 'formulas',        label: 'Fórmulas',         icon: FileSearch },
-      { id: 'catalogos',       label: 'Catálogos',        icon: Tag },
+      { id: 'notificaciones', label: 'Notificaciones Admin', icon: Bell },
+      { id: 'formulas',       label: 'Fórmulas',             icon: FileSearch },
+      { id: 'catalogos',      label: 'Catálogos',            icon: Tag },
     ]
   }
 ]
 
 const SECTION_TITLES = {
-  dashboard:'Dashboard', reportes:'Reportes', usuarios:'Usuarios',
-  clientes:'Clientes', optometras:'Optómetras', productos:'Productos',
-  ventas:'Ventas', citas:'Citas', notificaciones:'Notificaciones',
-  formulas:'Fórmulas Ópticas', catalogos:'Catálogos',
+  dashboard: 'Dashboard',       reportes: 'Reportes',
+  usuarios: 'Usuarios',         clientes: 'Clientes',
+  optometras: 'Optómetras',     productos: 'Productos',
+  ventas: 'Ventas',             citas: 'Citas',
+  notificaciones: 'Notificaciones Admin',
+  formulas: 'Fórmulas Ópticas', catalogos: 'Catálogos',
 }
 
-/* Dashboard con datos reales */
+/* ── Dashboard ── */
 function Dashboard() {
-  const [stats, setStats] = useState({ sales:0, customers:0, products:0, appointments:0, salesAmount:0 })
+  const [stats, setStats] = useState({ sales: 0, customers: 0, products: 0, appointments: 0, salesAmount: 0 })
   const [loading, setLoading] = useState(true)
   const [recentSales, setRecentSales] = useState([])
   const [upcomingAppts, setUpcomingAppts] = useState([])
@@ -71,10 +73,10 @@ function Dashboard() {
         const [sRes, cRes, pRes, aRes] = await Promise.all([
           getSales(), getCustomers(), getProducts({ limit: 1 }), getAppointments()
         ])
-        const sales = sRes.data?.data || sRes.data || []
+        const sales     = sRes.data?.data || sRes.data || []
         const customers = cRes.data || []
-        const products = pRes.data?.totalItems || 0
-        const appts = aRes.data?.data || aRes.data || []
+        const products  = pRes.data?.totalItems || 0
+        const appts     = aRes.data?.data || aRes.data || []
         const totalAmount = sales.reduce((acc, s) => acc + (Number(s.totalAmount) || 0), 0)
         setStats({ sales: sales.length, customers: customers.length, products, appointments: appts.length, salesAmount: totalAmount })
         setRecentSales(sales.slice(0, 5))
@@ -86,8 +88,8 @@ function Dashboard() {
   }, [])
 
   const fmt = (n) => `$${Number(n).toLocaleString('es-CO')}`
-  const STATUS_COLORS = { PENDING:'warning', CONFIRMED:'success', COMPLETED:'info', CANCELLED:'danger' }
-  const STATUS_LABELS = { PENDING:'Pendiente', CONFIRMED:'Confirmada', COMPLETED:'Completada', CANCELLED:'Cancelada' }
+  const STATUS_COLORS = { PENDING: 'warning', CONFIRMED: 'success', COMPLETED: 'info', CANCELLED: 'danger' }
+  const STATUS_LABELS = { PENDING: 'Pendiente', CONFIRMED: 'Confirmada', COMPLETED: 'Completada', CANCELLED: 'Cancelada' }
 
   if (loading) return <div className="loading-spinner"><div className="spinner" /></div>
 
@@ -116,27 +118,30 @@ function Dashboard() {
         <div className="content-card">
           <div className="card-header"><h2>Ventas Recientes</h2></div>
           <div className="table-container">
-            {recentSales.length === 0 ? <p className="empty-msg">Sin ventas registradas aún</p> : (
-              <table className="data-table">
-                <thead><tr><th>N°</th><th>Total</th><th>Fecha</th></tr></thead>
-                <tbody>
-                  {recentSales.map(s => (
-                    <tr key={s.sale_id}>
-                      <td>#{s.sale_id}</td>
-                      <td className="money">{fmt(s.totalAmount)}</td>
-                      <td>{s.saleDate ? new Date(s.saleDate).toLocaleDateString('es-CO') : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            {recentSales.length === 0
+              ? <p className="empty-msg">Sin ventas registradas aún</p>
+              : (
+                <table className="data-table">
+                  <thead><tr><th>N°</th><th>Total</th><th>Fecha</th></tr></thead>
+                  <tbody>
+                    {recentSales.map(s => (
+                      <tr key={s.sale_id}>
+                        <td>#{s.sale_id}</td>
+                        <td className="money">{fmt(s.totalAmount)}</td>
+                        <td>{s.saleDate ? new Date(s.saleDate).toLocaleDateString('es-CO') : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
           </div>
         </div>
 
         <div className="content-card">
           <div className="card-header"><h2>Citas Activas</h2></div>
           <div className="appointments-list">
-            {upcomingAppts.length === 0 ? <p className="empty-msg">No hay citas activas</p>
+            {upcomingAppts.length === 0
+              ? <p className="empty-msg">No hay citas activas</p>
               : upcomingAppts.map(a => (
                 <div key={a.appointment_id} className="appointment-item">
                   <div className="appointment-header">
@@ -148,7 +153,9 @@ function Dashboard() {
                       {STATUS_LABELS[a.status] || a.status}
                     </span>
                   </div>
-                  <p className="appointment-service">{a.appointmentDate ? new Date(a.appointmentDate).toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'}) : '—'}</p>
+                  <p className="appointment-service">
+                    {a.appointmentDate ? new Date(a.appointmentDate).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                  </p>
                 </div>
               ))}
           </div>
@@ -158,28 +165,33 @@ function Dashboard() {
   )
 }
 
-/* Panel principal */
+/* ── Panel Principal ── */
 const PanelAdmin = () => {
   const navigate = useNavigate()
-  const [activeSection, setActiveSection] = useState('dashboard')
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [userName, setUserName] = useState('')
-  const [notifications, setNotifications] = useState([])
+  const [activeSection, setActiveSection]     = useState('dashboard')
+  const [isAdmin, setIsAdmin]                 = useState(false)
+  const [loading, setLoading]                 = useState(true)
+  const [userName, setUserName]               = useState('')
+  const [notifications, setNotifications]     = useState([])
   const [showNotifications, setShowNotifications] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [unreadCount, setUnreadCount]         = useState(0)
+  const [sidebarOpen, setSidebarOpen]         = useState(true)
 
+  // Agregar clase al body para estilos específicos del admin
+  useEffect(() => {
+    document.body.classList.add('admin-active')
+    return () => document.body.classList.remove('admin-active')
+  }, [])
+
+  // Verificar autenticación y rol admin
   useEffect(() => {
     const token = localStorage.getItem('token')
-    const user = localStorage.getItem('user')
+    const user  = localStorage.getItem('user')
     if (!token || !user) { navigate('/login'); return }
     try {
-      const userData = JSON.parse(user)
-      // Detectar admin: lee is_admin (flag directo de Login.jsx)
-      // o compara role en minúscula contra lista de roles admin
+      const userData    = JSON.parse(user)
       const ADMIN_ROLES = ['administrador', 'admin']
-      const roleLower = (userData.role_lower || userData.role || '').toLowerCase()
+      const roleLower   = (userData.role_lower || userData.role || '').toLowerCase()
       const isUserAdmin = userData.is_admin === true || ADMIN_ROLES.includes(roleLower)
       if (!isUserAdmin) { navigate('/'); return }
       setIsAdmin(true)
@@ -188,9 +200,10 @@ const PanelAdmin = () => {
     finally { setLoading(false) }
   }, [navigate])
 
+  // Cargar notificaciones cuando el admin está verificado
   const fetchNotifications = async () => {
     try {
-      const res = await getNotifications()
+      const res  = await getNotifications()
       const data = res.data?.data || res.data || []
       setNotifications(data)
       setUnreadCount(data.filter(n => n.status === 'PENDING' || n.status === 'SENT').length)
@@ -202,35 +215,40 @@ const PanelAdmin = () => {
   const handleMarkRead = async (id) => {
     try {
       await markNotifRead(id)
-      setNotifications(prev => prev.map(n => n.notification_id === id ? {...n, status:'READ'} : n))
+      setNotifications(prev => prev.map(n => n.notification_id === id ? { ...n, status: 'READ' } : n))
       setUnreadCount(prev => Math.max(0, prev - 1))
-    } catch(e) { console.error(e) }
+    } catch (e) { console.error(e) }
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('token'); localStorage.removeItem('user'); localStorage.removeItem('rememberMe')
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('rememberMe')
     navigate('/login')
   }
 
   const formatDate = (d) => {
     if (!d) return ''
     const diff = Math.floor((Date.now() - new Date(d)) / 60000)
-    if (diff < 1) return 'Ahora'
-    if (diff < 60) return `Hace ${diff} min`
-    if (diff < 1440) return `Hace ${Math.floor(diff/60)} h`
+    if (diff < 1)    return 'Ahora'
+    if (diff < 60)   return `Hace ${diff} min`
+    if (diff < 1440) return `Hace ${Math.floor(diff / 60)} h`
     return new Date(d).toLocaleDateString('es-ES')
   }
 
   const getNotifIcon = (type) => {
-    if (type === 'APPOINTMENT_CONFIRMED') return <CheckCircle size={15} style={{color:'#22c55e'}} />
-    if (type === 'APPOINTMENT_CANCELLED') return <XCircle size={15} style={{color:'#ef4444'}} />
-    return <Clock size={15} style={{color:'#60a5fa'}} />
+    if (type === 'APPOINTMENT_CONFIRMED') return <CheckCircle size={15} style={{ color: '#22c55e' }} />
+    if (type === 'APPOINTMENT_CANCELLED') return <XCircle    size={15} style={{ color: '#ef4444' }} />
+    return <Clock size={15} style={{ color: '#60a5fa' }} />
   }
 
-  const navigate_section = (id) => { setActiveSection(id); setShowNotifications(false) }
+  const navigate_section = (id) => {
+    setActiveSection(id)
+    setShowNotifications(false)
+  }
 
   const renderSection = () => {
-    switch(activeSection) {
+    switch (activeSection) {
       case 'dashboard':      return <Dashboard />
       case 'reportes':       return <Reportes />
       case 'usuarios':       return <AdminUsuarios />
@@ -247,7 +265,7 @@ const PanelAdmin = () => {
   }
 
   if (loading) return (
-    <div className="admin-panel" style={{display:'flex',justifyContent:'center',alignItems:'center',minHeight:'100vh'}}>
+    <div className="admin-panel" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
       <div className="spinner" />
     </div>
   )
@@ -256,7 +274,7 @@ const PanelAdmin = () => {
   return (
     <div className={`admin-panel new-panel ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
 
-      {/* Sidebar */}
+      {/* ── Sidebar ── */}
       <aside className="admin-sidebar new-sidebar">
         <div className="sidebar-header">
           <div className="sidebar-logo">
@@ -309,8 +327,9 @@ const PanelAdmin = () => {
         </div>
       </aside>
 
-      {/* Main */}
+      {/* ── Main ── */}
       <div className="admin-main new-main">
+
         {/* Topbar */}
         <header className="admin-topbar new-topbar">
           <div className="topbar-left">
@@ -322,12 +341,17 @@ const PanelAdmin = () => {
               <p className="topbar-sub">Bienvenido, {userName}</p>
             </div>
           </div>
+
           <div className="topbar-right">
+            {/* Campanita de notificaciones */}
             <div className="notifications-dropdown-container">
               <button className="notification-btn" onClick={() => setShowNotifications(!showNotifications)}>
                 <Bell size={20} />
-                {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+                {unreadCount > 0 && (
+                  <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+                )}
               </button>
+
               {showNotifications && (
                 <div className="notifications-dropdown">
                   <div className="notifications-header">
@@ -338,11 +362,17 @@ const PanelAdmin = () => {
                     {notifications.length === 0
                       ? <div className="no-notifications"><Bell size={24} /><p>Sin notificaciones</p></div>
                       : notifications.slice(0, 8).map(n => (
-                        <div key={n.notification_id} className={`notification-item ${n.status !== 'READ' ? 'unread' : ''}`} onClick={() => handleMarkRead(n.notification_id)}>
+                        <div
+                          key={n.notification_id}
+                          className={`notification-item ${n.status !== 'READ' ? 'unread' : ''}`}
+                          onClick={() => handleMarkRead(n.notification_id)}
+                        >
                           <div className="notification-icon">{getNotifIcon(n.type)}</div>
                           <div className="notification-content">
                             <div className="notification-title">{n.subject}</div>
-                            <div className="notification-message">{(n.message || '').slice(0, 55)}{(n.message || '').length > 55 ? '…' : ''}</div>
+                            <div className="notification-message">
+                              {(n.message || '').slice(0, 55)}{(n.message || '').length > 55 ? '…' : ''}
+                            </div>
                             <div className="notification-time">{formatDate(n.sent_at || n.createdAt)}</div>
                           </div>
                         </div>
@@ -355,6 +385,7 @@ const PanelAdmin = () => {
                 </div>
               )}
             </div>
+
             <div className="topbar-user">
               <div className="avatar sm">{userName.charAt(0).toUpperCase()}</div>
               <span className="topbar-user-name">{userName}</span>

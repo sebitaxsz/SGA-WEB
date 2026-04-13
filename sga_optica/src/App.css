@@ -4,16 +4,12 @@
   --secondary-color: #6c757d;
 }
 
+/* Ajuste del body para el navbar fijo */
 body {
   padding-top: 76px;
 }
 
-.hover-shadow:hover {
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1) !important;
-  transform: translateY(-2px);
-  transition: all 0.3s ease;
-}
-
+/* Ajustes responsivos */
 @media (max-width: 768px) {
   body {
     padding-top: 140px;
@@ -41,4 +37,48 @@ body.admin-active .navbar.fixed-top {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* ============================================ */
+/* MEJORAS MÍNIMAS PARA LA PÁGINA PRINCIPAL */
+/* ============================================ */
+
+/* Banner de envío gratis */
+.container-fluid.bg-primary {
+  position: relative;
+  z-index: 1029;
+}
+
+/* Cards con efecto hover */
+.hover-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Footer */
+footer.bg-dark {
+  background-color: #1a1a2e !important;
+}
+
+footer ul li a {
+  transition: color 0.3s ease;
+}
+
+footer ul li a:hover {
+  color: white !important;
+}
+
+/* Responsive para móvil */
+@media (max-width: 768px) {
+  .carousel-item img {
+    height: 300px !important;
+  }
+  
+  .carousel-caption {
+    display: none !important;
+  }
 }

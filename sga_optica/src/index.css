@@ -1,3 +1,4 @@
+/* Reset y estilos base */
 * {
   margin: 0;
   padding: 0;
@@ -10,10 +11,17 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  padding-top: 140px;
+  padding-top: 76px;
   background-color: #f8f9fa;
+  transition: padding-top 0.3s ease;
 }
 
+/* Cuando el body está en modo admin, resetear el padding */
+body.admin-active {
+  padding-top: 0 !important;
+}
+
+/* Ajustes Bootstrap personalizados */
 :root {
   --bs-primary: #1a5fb4;
   --bs-primary-rgb: 26, 95, 180;
@@ -29,8 +37,26 @@ body {
   border-color: #154c8c;
 }
 
+.btn-outline-primary {
+  color: var(--bs-primary);
+  border-color: var(--bs-primary);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
+}
+
+.banner-envio {
+  margin-top: 30px;
+}
+/* Responsive */
 @media (max-width: 768px) {
   body {
-    padding-top: 180px;
+    padding-top: 140px;
+  }
+  
+  body.admin-active {
+    padding-top: 0 !important;
   }
 }

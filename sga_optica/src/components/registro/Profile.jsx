@@ -2,11 +2,14 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../carrito/CartContext'
 import { formulaService } from '../../services/formula.service'
+import axiosInstance from '../../services/axiosConfig'
 
 const Profile = () => {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
+  const [customerData, setCustomerData] = useState(null)
   const [activeTab, setActiveTab] = useState('perfil')
+  const [loading, setLoading] = useState(true)
   const { cart } = useCart()
 
   // Fórmula visual state
@@ -20,22 +23,39 @@ const Profile = () => {
   const fileInputRef = useRef(null)
 
   useEffect(() => {
-    // Leer el tab desde sessionStorage (viene del Navbar cuando se hace clic en "Mi Fórmula Visual")
+    // Leer el tab desde sessionStorage (viene del Navbar al hacer clic en "Mi Fórmula Visual")
     const pendingTab = sessionStorage.getItem('profileTab')
     if (pendingTab) {
       setActiveTab(pendingTab)
       sessionStorage.removeItem('profileTab')
     }
 
-    const timer = setTimeout(() => {
+    const loadProfile = async () => {
+      const token = localStorage.getItem('token')
       const userData = localStorage.getItem('user')
-      if (userData) {
-        setUser(JSON.parse(userData))
-      } else {
+
+      if (!token || !userData) {
         navigate('/login')
+        return
       }
-    }, 10)
-    return () => clearTimeout(timer)
+
+      const parsedUser = JSON.parse(userData)
+      setUser(parsedUser)
+
+      try {
+        // Cargar datos del customer desde la API
+        const response = await axiosInstance.get(`/customer/user/${parsedUser.user_id}`)
+        if (response.data) {
+          setCustomerData(response.data)
+        }
+      } catch (error) {
+        console.error('Error cargando datos del cliente:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadProfile()
   }, [navigate])
 
   useEffect(() => {
@@ -89,7 +109,7 @@ const Profile = () => {
       formData.append('file', selectedFile)
       formData.append('description', description)
       await formulaService.uploadMyFormula(formData)
-      setFormulaSuccess('Fórmula subida exitosamente!')
+      setFormulaSuccess('¡Fórmula subida exitosamente!')
       setSelectedFile(null)
       setDescription('')
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -125,9 +145,9 @@ const Profile = () => {
 
   const BASE_URL = 'https://7l77sjp2-3002.use2.devtunnels.ms'
 
-  if (!user) {
+  if (loading) {
     return (
-      <div className="container text-center py-5">
+      <div className="container text-center py-5" style={{ marginTop: '100px' }}>
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Cargando...</span>
         </div>
@@ -135,16 +155,25 @@ const Profile = () => {
     )
   }
 
+  // Datos a mostrar priorizando customerData (de la API) sobre localStorage
+  const displayName = customerData
+    ? `${customerData.firstName || ''} ${customerData.firstLastName || ''}`.trim()
+    : user?.nombre || user?.firstName || 'Usuario'
+  const displayEmail = customerData?.email || user?.email || user?.user_user || ''
+  const displayPhone = customerData?.phoneNumber || user?.telefono || 'No registrado'
+  const displayAddress = customerData?.address || 'No registrada'
+
   return (
     <div className="container py-5" style={{ marginTop: '100px' }}>
       <div className="row">
+
         {/* ── Sidebar ── */}
         <div className="col-md-3">
           <div className="card">
             <div className="card-body text-center">
               <div className="display-1 mb-3">👤</div>
-              <h5>{user.nombre} {user.apellido}</h5>
-              <p className="text-muted">{user.email}</p>
+              <h5>{displayName}</h5>
+              <p className="text-muted">{displayEmail}</p>
               <div className="d-grid gap-2">
                 <button className="btn btn-outline-danger" onClick={handleLogout}>
                   <i className="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
@@ -165,7 +194,9 @@ const Profile = () => {
               onClick={() => setActiveTab('formula')}
             >
               <i className="fas fa-file-medical me-2"></i>Mi Fórmula Visual
-              <span className="badge bg-primary ms-2 float-end">{formulas.length > 0 ? formulas.length : ''}</span>
+              {formulas.length > 0 && (
+                <span className="badge bg-primary ms-2 float-end">{formulas.length}</span>
+              )}
             </button>
             <button
               className={`list-group-item list-group-item-action ${activeTab === 'pedidos' ? 'active' : ''}`}
@@ -194,20 +225,22 @@ const Profile = () => {
           {/* Mi Perfil */}
           {activeTab === 'perfil' && (
             <div className="card">
-              <div className="card-header">
+              <div className="card-header bg-primary text-white">
                 <h5 className="mb-0">Información del Perfil</h5>
               </div>
               <div className="card-body">
                 <div className="row">
                   <div className="col-md-6">
-                    <p><strong>Nombre:</strong> {user.nombre}</p>
-                    <p><strong>Apellido:</strong> {user.apellido}</p>
-                    <p><strong>Email:</strong> {user.email}</p>
+                    <p><strong>Nombre:</strong> {customerData?.firstName || user?.nombre || '—'}</p>
+                    <p><strong>Segundo Nombre:</strong> {customerData?.secondName || '—'}</p>
+                    <p><strong>Apellido:</strong> {customerData?.firstLastName || user?.apellido || '—'}</p>
+                    <p><strong>Segundo Apellido:</strong> {customerData?.secondLastName || '—'}</p>
                   </div>
                   <div className="col-md-6">
-                    <p><strong>Teléfono:</strong> {user.telefono || 'No registrado'}</p>
-                    <p><strong>Miembro desde:</strong> {user.fechaRegistro ? new Date(user.fechaRegistro).toLocaleDateString() : '—'}</p>
-                    <p><strong>Tipo de cuenta:</strong> {user.role === 'admin' ? 'Administrador' : 'Cliente'}</p>
+                    <p><strong>Email:</strong> {displayEmail}</p>
+                    <p><strong>Teléfono:</strong> {displayPhone}</p>
+                    <p><strong>Dirección:</strong> {displayAddress}</p>
+                    <p><strong>Tipo de cuenta:</strong> Cliente</p>
                   </div>
                 </div>
                 <Link to="/editar-perfil" className="btn btn-primary mt-3">
@@ -370,7 +403,7 @@ const Profile = () => {
               <div className="card-body">
                 {cart.length === 0 ? (
                   <>
-                    <p className="text-muted">Aún no has añadido productos.</p>
+                    <p className="text-muted">Aún no has realizado pedidos.</p>
                     <Link to="/productos/gafas-sol" className="btn btn-primary">
                       <i className="fas fa-shopping-cart me-2"></i>Ver Productos
                     </Link>
@@ -413,7 +446,7 @@ const Profile = () => {
                 <h5 className="mb-0">Mis Citas</h5>
               </div>
               <div className="card-body">
-                <p>Gestiona tus citas médicas.</p>
+                <p>Gestiona tus citas médicas con nuestros optometristas.</p>
                 <Link to="/citas/ver" className="btn btn-primary me-2">
                   <i className="fas fa-eye me-2"></i>Ver Citas
                 </Link>
@@ -452,6 +485,7 @@ const Profile = () => {
               </div>
             </div>
           )}
+
         </div>
       </div>
     </div>
